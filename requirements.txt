@@ -1,0 +1,12 @@
+matplotlib
+dearpygui
+scikit-learn
+seaborn
+numpy
+shortuuid
+spikeinterface
+networkx
+pyzmq
+jupyterlab
+scipy[all]
+#need to install isosplit_python from github
