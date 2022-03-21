@@ -163,7 +163,7 @@ class Processor:
         while not self.shutdown_event.is_set():
             try:
                 data = self.in_queue.get(block=True, timeout=self.QUEUE_PULL_TIMEOUT)
-                if self.in_queue.qsize > 1000:
+                if self.in_queue.qsize() > 1000:
                     self.log(logging.WARNING,'in-queue size is larger than 1000. Error may occur')
                 processed_data = self._process(data)
                 if isinstance(processed_data,list):
@@ -325,11 +325,23 @@ class RandomMsgTimeSource(TimeSource):
 class AddProcessor(Processor):
     def process(self, msg):
         return Message('dummy',msg.data + 100)
+    
+class ScaleProcessor(Processor):
+    def __init__(self, a, b):
+        super().__init__()
+        self.a = a
+        self.b = b
+        
+    def process(self, message: Message) -> Message:
+        x = message.data*self.a+self.b
+        print(x.shape)
+        return Message(message.type, x)
 
 class EchoProcessor(Sink):
     def process(self,data):
         self.log(logging.INFO, f'Printing {data}')
-
+        
+        
 class DummpyNumpyTimeSource(TimeSource):
     '''
     Generate random numpy array of a particular shape
