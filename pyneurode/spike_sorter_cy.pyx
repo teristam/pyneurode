@@ -87,3 +87,98 @@ def align_spike_cy(spikes, int chan_per_electrode=4, int search_span = 15, int p
         spikes_aligned_memview[i,:, (pre_peak_span-first_half_length):(pre_peak_span+second_half_length)] = spikes_channel_memview[i, :, start_idx:end_idx]
         
     return spikes_aligned.reshape(nspikes,-1)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def template_matching_mse_cy(np.float32_t [:,:] templates, np.float32_t [:,:] spike_waveforms, 
+                                    np.int_t [:] template_electrode_ids, np.int_t [:] electrode_ids):
+    # Calculate the MSE in pure C for speedup
+    
+    n_templates = templates.shape[0]
+    n = templates.shape[1]
+    n_spikes = spike_waveforms.shape[0]
+    
+    # initialize array for results
+    cluster_ids = np.zeros((n_spikes,),dtype=np.int)
+    cdef int[:] cluster_ids_view = cluster_ids
+    
+    cdef float mse = 0
+    cdef float min_mse
+    cdef int best_match_idx = 0
+    cdef int i, j, electrode_template_idx, spike_i, electrode_id
+    
+    # for each spike waveform, compare with the corresponding template in the same electrode only
+    for spike_i in range(n_spikes):
+        electrode_id = electrode_ids[spike_i]
+        best_match_idx = -1
+        electrode_template_idx = 0 # index of template in the current electrodee
+        min_mse = -1 
+        
+        for i in range(n_templates):
+            if electrode_id == template_electrode_ids[i]:
+                
+                mse = 0
+
+                for j in range(n):
+                    mse = mse+ (spike_waveforms[spike_i, j] - templates[i,j])*(spike_waveforms[spike_i, j] - templates[i,j])
+
+                mse = mse/n #avoid division by zero error check
+
+                if min_mse < 0 or mse< min_mse: # first run or smaller
+                    min_mse = mse
+                    best_match_idx = electrode_template_idx
+                
+                electrode_template_idx += 1
+                
+                    
+        cluster_ids_view[spike_i] = (electrode_id+1)*100 + (best_match_idx+1)
+
+    return cluster_ids
+
+
+
+def template_match_all_electrodes_cy(df, templates, template_electrode_id, template_cluster_id, 
+                pca_transformers = None, standard_scalers = None):
+    ''' 
+    Match input spike wavefrom to the closest template, matching is done on each tetrode independently
+    '''
+    
+    # cluster label is in the form of 101,102 etc. The x//100 represents the tetrode
+    # x%100 represent the cluster in that tetrode
+
+    if pca_transformers is not None:
+        pc_norms = np.zeros((len(df), pca_transformers[0].n_components ))
+    
+    spikes = np.stack(df.spike_waveform.to_numpy())
+    electrode_ids = df.electrode_ids.astype(np.int).to_numpy()
+    aligned_waveforms = align_spike_cy(spikes)
+    
+    # Template match each electrode 
+    cdef int i, eid
+    
+    labels_template = template_matching_mse_cy(templates, aligned_waveforms, template_electrode_id, electrode_ids)
+    
+    if pca_transformers is not None:
+        for i in range(len(electrode_ids)):
+            eid = electrode_ids[i]
+
+            #Also do the PCA transform for monitoring purpose
+
+            if eid in pca_transformers and pca_transformers[eid] is not None:
+                pca_transformer = pca_transformers[eid]
+                pc = pca_transformer.transform(aligned_waveforms.reshape(1,-1))
+                pc_norm = standard_scalers[eid].transform(pc)
+                pc_norms[i,:] = pc_norm.ravel()
+
+            else:
+                pc_norms[i,:] = -1
+
+
+    df['cluster_id'] = labels_template #make plotting program aware this is a categorical variable
+    df['spike_waveform_aligned'] = aligned_waveforms.tolist()
+    if pca_transformers is not None:
+        df['pc_norm'] = pc_norms
+
+    return df 
