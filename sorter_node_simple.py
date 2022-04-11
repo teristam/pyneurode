@@ -26,16 +26,20 @@ if  __name__ == '__main__':
 
     with ProcessorContext() as ctx:
 
-        # reading too fast may overflow the pipe
-        # fileReader = FileReaderSource('data/data_pac kets_M2_D23_1910.pkl',interval=0.01, batch_size=10)
         sineWave = SineTimeSource(0.1,frequency = 12.3, channel_num=10, sampling_frequency=100)
-        analog_visualizer = AnalogVisualizer('v1',scale=2,time_scale=1/100)
-
+        scaleProcessor = ScaleProcessor(4,5)
+        analog_visualizer = AnalogVisualizer('v1',scale=4,time_scale=1/100)
+        
         gui = GUIProcessor()
         gui.register_visualizer(analog_visualizer,filters=['sine'])
 
-        sineWave.connect(gui,'sine')
+        sineWave.connect(scaleProcessor)
+        scaleProcessor.connect(gui,'sine')
 
-        ctx.register_processors(sineWave, gui)
+        ctx.register_processors(sineWave, scaleProcessor, gui)
         
         ctx.start()
+        
+        
+        
+        

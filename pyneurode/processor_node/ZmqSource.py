@@ -4,7 +4,7 @@ from pyneurode.zmq_client import *
 import pickle 
 from .ProcessorContext import ProcessorContext
 from pyneurode.spike_sorter import simpleDownSample
-import pyneurode.utils
+from pyneurode import utils
 
 
 class ZmqSource(Source):

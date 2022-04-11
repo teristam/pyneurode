@@ -30,9 +30,9 @@ if  __name__ == '__main__':
 
         # reading too fast may overflow the pipe
         # zmqSource = FileReaderSource('data/ch256_dump.pkl', adc_channel = 260)
-        zmqSource = FileEchoSource(interval=0.0002, filename='data/ch256_dump.pkl', batch_size=35, filetype='message')
+        zmqSource = FileEchoSource(interval=0.0002, filename='data/ch256_dump.pkl', batch_size=35, filetype='message', verbose=True)
         #interval=0.0002,  batch_size=35 is similar to realtime rate
-        zmqSource = ZmqSource(adc_channel=20)
+        # zmqSource = ZmqSource(adc_channel=20)
         # zmqSource = ZmqSource(adc_channel=68)
         repeat = 16
         # zmqSource = ZmqSource(adc_channel=16*repeat+4)

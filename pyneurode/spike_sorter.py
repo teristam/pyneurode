@@ -20,6 +20,7 @@ import time
 from isosplit5 import isosplit5
 from scipy import spatial
 import warnings
+from .spike_sorter_cy import align_spike_cy
 
 def sort_spikes(spike_waveforms, eps=1,pca_component=6, min_samples=5,clusterMethod=None):
     start = time.time()
@@ -76,10 +77,10 @@ def calculate_spike_template(spike_waveforms, cluster_ids):
     # Calculate the templates for neurons
     # spike_waveforms should be [n x time]
     # Will remove outliner cluster (-1) automatically
-    spike_waveforms = spike_waveforms[cluster_ids!='noise']
-    cluster_ids = cluster_ids[cluster_ids!='noise']
+    spike_waveforms = spike_waveforms[cluster_ids!=-1]
+    cluster_ids = cluster_ids[cluster_ids!=-1]
     label_unique = np.unique(cluster_ids)
-    template = np.zeros((len(label_unique), spike_waveforms.shape[1]))
+    template = np.zeros((len(label_unique), spike_waveforms.shape[1]),dtype=np.float32)
     for i,lbls in enumerate(label_unique):
         template[i,:] =spike_waveforms[cluster_ids==lbls,:].mean(axis=0)
 
@@ -282,9 +283,9 @@ def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1,
         standard_scalers[e_ids] = standard_scaler
         #
         if labels is not None:
-            df.loc[df.electrode_ids==e_ids,'cluster_id'] = [f'C{e_ids}_{l:d}' for l in labels] #make unique id for each electrode
+            df.loc[df.electrode_ids==e_ids,'cluster_id'] = [(e_ids+1)*100 +l for l in labels] #make unique id for each electrode
         else:
-           df.loc[df.electrode_ids==e_ids,'cluster_id'] = 'noise' 
+           df.loc[df.electrode_ids==e_ids,'cluster_id'] = '-1' 
 
     return df, pca_transformers,standard_scalers
 
@@ -329,6 +330,63 @@ def template_match_all_electrodes_fast(df, templates, template_electrode_id,temp
     results = df.apply(sort_spike_row,axis=1, 
         args=(templates, template_cluster_id, template_electrode_id, pca_transformers, standard_scalers), result_type='expand')
     df[['cluster_id', 'spike_waveform_aligned','sorting_time', 'pc_norm']] = results
+
+    return df 
+
+def template_match_all_electrodes_np(df, templates, template_electrode_id, template_cluster_id, 
+                pca_transformers = None, standard_scalers = None):
+    ''' 
+    Match input spike wavefrom to the closest template, matching is done on each tetrode independently
+    '''
+
+    labels_template=[]
+    norm_dist_template = []
+    pc_norms = []
+    
+    
+    spikes = np.stack(df.spike_waveform.to_numpy())
+    electrode_id = df.electrode_ids.to_numpy()
+    aligned_spikes = align_spike_cy(spikes)
+    neigbour_idx = np.where(template_electrode_id == electrode_id)[0] # do sorting independently for each electrode
+
+
+    for _,row  in df.iterrows():
+        # align the spike, separate them into their respective tetrodes
+        # then match with templates
+        # spike = row.spike_waveform
+        # electrode_id = row.electrode_ids
+        # spike = align_spike(spike)
+        # aligned_waveforms.append(spike.squeeze())
+        neigbour_idx = np.where(template_electrode_id == electrode_id)[0] # do sorting independently for each electrode
+
+        if len(neigbour_idx) > 0:
+            idx,norm_dist = template_matching(templates[neigbour_idx,:], spike)
+            labels_template.append(template_cluster_id[neigbour_idx[idx]])
+            norm_dist_template.append(norm_dist)
+        else:
+            # no template found for a particular electrode
+            # make them unclassified
+            labels_template.append('noise')
+            norm_dist_template.append(np.nan)
+
+        if pca_transformers is not None:
+            #Also do the PCA transform for monitoring purpose
+
+            if electrode_id in pca_transformers and pca_transformers[electrode_id] is not None:
+                pca_transformer = pca_transformers[electrode_id]
+                pc = pca_transformer.transform(spike.reshape(1,-1))
+                pc_norm = standard_scalers[electrode_id].transform(pc)
+                pc_norms.append(pc_norm.ravel())
+           
+            else:
+                pc_norms.append(None)
+
+
+    df['cluster_id'] = labels_template #make plotting program aware this is a categorical variable
+    df['dist_tm'] = norm_dist_template
+    df['spike_waveform_aligned'] = aligned_spikes.tolist()
+    if pca_transformers is not None:
+        df['pc_norm'] = pc_norms
 
     return df 
 

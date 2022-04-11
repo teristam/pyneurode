@@ -334,7 +334,6 @@ class ScaleProcessor(Processor):
         
     def process(self, message: Message) -> Message:
         x = message.data*self.a+self.b
-        print(x.shape)
         return Message(message.type, x)
 
 class EchoProcessor(Sink):
