@@ -12,6 +12,7 @@ from pyneurode.processor_node.Processor import *
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from pyneurode.spike_sorter import *
+from pyneurode.spike_sorter_cy import template_match_all_electrodes_cy
 import pyneurode.utils
 import warnings
 
@@ -134,7 +135,7 @@ class SpikeSortProcessor(BatchProcessor):
                 self.df_sort = template_match_all_electrodes_fast(self.df_sort, self.templates, 
                         self.template_electrode_id, self.template_cluster_id, self.pca_transformers, self.standard_scalers)
             else:
-                self.df_sort = template_match_all_electrodes_fast(self.df_sort, self.templates, 
+                self.df_sort = template_match_all_electrodes_cy(self.df_sort, self.templates, 
                         self.template_electrode_id, self.template_cluster_id)
 
             # print(f'Template matching of {len(df_sort)} spikes takes {time.time()-start_time:.3f}')

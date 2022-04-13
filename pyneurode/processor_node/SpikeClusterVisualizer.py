@@ -3,6 +3,7 @@ from typing import *
 import dearpygui.dearpygui as dpg
 import numpy as np
 import pandas as pd
+from sklearn import cluster
 from .Processor import Message
 from .Visualizer import Visualizer
 
@@ -149,31 +150,31 @@ class SpikeClusterVisualizer(Visualizer):
         # get the theme for a specific cluster_id
 
         # first get all the clusters in the same tetrode
-        tetrode = int(cluster2plot.split('_')[0][1:]) # cluster id is always in the form C<tetrode id>_<cluster id>
-        cur_tetrode_cluster = [c for c in self.cluster_list if f'C{tetrode}_' in c] #find the cluster id for current tetrode
+        tetrode = cluster2plot%100 # cluster id is always in the form C<tetrode id>_<cluster id>
+        cur_tetrode_cluster = [c for c in self.cluster_list if c%100==tetrode] #find the cluster id for current tetrode
         
         # find the proper index in the theme
         idx = cur_tetrode_cluster.index(cluster2plot)
         return self.pca_themes[idx%len(self.pca_themes)]
 
     def drawPCA(self):
-        #TODO: keep the cluster color and markers the same
-        cluster2plot = dpg.get_value(self.list_box)
-        tetrode = int(cluster2plot.split('_')[0][1:]) # cluster id is always in the form C<tetrode id>_<cluster id>
-        cur_tetrode_cluster = [c for c in self.cluster_list if f'C{tetrode}_' in c] #find the cluster id for current tetrode
+        cluster2plot = dpg.get_value(self.list_box) #will return a string
+        tetrode = int(cluster2plot)%100 # cluster id is in the form 201, 202 etc, where n%100 is the channel
+        cur_tetrode_cluster = [c for c in self.cluster_list if c%100==tetrode] #find the cluster id for current tetrode
 
         for i,cid in enumerate(cur_tetrode_cluster):
             df_sel = self.df_sort[self.df_sort.cluster_id == cid]
 
             if len(df_sel)>0:
-                pc_norm = np.stack(df_sel.pc_norm.to_numpy())
-                if pc_norm[0] is not None:
-                    x = pc_norm[:,0].tolist()
-                    y = pc_norm[:,1].tolist()
+                if 'pc_norm' in df_sel.columns:
+                    pc_norm = np.stack(df_sel.pc_norm.to_numpy())
+                    if pc_norm[0] is not None:
+                        x = pc_norm[:,0].tolist()
+                        y = pc_norm[:,1].tolist()
 
-                    series = dpg.add_scatter_series(x, y, parent=self.pca_axes[1])
-                    # apply theme to the series
-                    dpg.bind_item_theme(series, self.get_cluster_theme(cid))
+                        series = dpg.add_scatter_series(x, y, parent=self.pca_axes[1])
+                        # apply theme to the series
+                        dpg.bind_item_theme(series, self.get_cluster_theme(cid))
 
 
     def update(self, messages: List[Message]):
@@ -199,7 +200,6 @@ class SpikeClusterVisualizer(Visualizer):
                 cluster_ids = set(self.df_sort.cluster_id.unique())
                 if not cluster_ids in self.cluster_list:
                     self.cluster_list = self.cluster_list.union(cluster_ids)
-                    # print(self.cluster_list)
                     items = sorted(list(self.cluster_list))
                     dpg.configure_item(self.list_box, items=items, num_items=len(items))
 
