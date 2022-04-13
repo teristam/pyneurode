@@ -77,7 +77,7 @@ def calculate_spike_template(spike_waveforms, cluster_ids):
     # Calculate the templates for neurons
     # spike_waveforms should be [n x time]
     # Will remove outliner cluster (-1) automatically
-    spike_waveforms = spike_waveforms[cluster_ids!=-1]
+    spike_waveforms = spike_waveforms[cluster_ids!=-1] 
     cluster_ids = cluster_ids[cluster_ids!=-1]
     label_unique = np.unique(cluster_ids)
     template = np.zeros((len(label_unique), spike_waveforms.shape[1]),dtype=np.float32)
@@ -283,9 +283,9 @@ def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1,
         standard_scalers[e_ids] = standard_scaler
         #
         if labels is not None:
-            df.loc[df.electrode_ids==e_ids,'cluster_id'] = [(e_ids+1)*100 +l for l in labels] #make unique id for each electrode
+            df.loc[df.electrode_ids==e_ids,'cluster_id'] = [(e_ids+1)*100 +(l+1) for l in labels] #make unique id for each electrode
         else:
-           df.loc[df.electrode_ids==e_ids,'cluster_id'] = '-1' 
+           df.loc[df.electrode_ids==e_ids,'cluster_id'] = -1
 
     return df, pca_transformers,standard_scalers
 
