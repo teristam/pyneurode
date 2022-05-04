@@ -11,6 +11,7 @@ from pyneurode.processor_node.AnalogVisualizer import *
 from pyneurode.processor_node.SpikeClusterVisualizer import SpikeClusterVisualizer
 from pyneurode.processor_node.LatencyVisualizer import LatencyVisualizer
 from pyneurode.processor_node.ZmqSource import ZmqSource
+from pyneurode.processor_node.Processor import Message
 
 '''
 GUI design architecture:
@@ -30,12 +31,10 @@ if  __name__ == '__main__':
 
         # reading too fast may overflow the pipe
         # zmqSource = FileReaderSource('data/ch256_dump.pkl', adc_channel = 260)
-        zmqSource = FileEchoSource(interval=0.0002, filename='data/ch256_dump.pkl', batch_size=35, filetype='message', verbose=True)
+        # zmqSource = FileEchoSource(interval=0.0002, filename='data/ch256_dump2.pkl', batch_size=35, filetype='message', verbose=True)
         #interval=0.0002,  batch_size=35 is similar to realtime rate
-        # zmqSource = ZmqSource(adc_channel=20)
-        # zmqSource = ZmqSource(adc_channel=68)
         repeat = 16
-        # zmqSource = ZmqSource(adc_channel=16*repeat+4)
+        zmqSource = ZmqSource(adc_channel=16*repeat+4)
 
 
         # spikeSortProcessor = SpikeSortProcessor(interval=0.001, min_num_spikes=2000)
@@ -47,7 +46,7 @@ if  __name__ == '__main__':
         gui = GUIProcessor()
         # filesave = FileEchoSink('data/df_sort_ch16.pkl')
         # filesave = FileEchoSink('data/df_sort_ch64.pkl')
-        filesave = FileEchoSink(f'data/df_sort_ch{16*repeat}.pkl')
+        filesave = FileEchoSink(f'data/df_sort_ch{16*repeat}_cy.pkl')
 
 
         zmqSource.connect(spikeSortProcessor, filters='spike')
