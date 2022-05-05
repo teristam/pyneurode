@@ -1,5 +1,3 @@
-API documentation
-===================
 
 Built-in Processor nodes
 ----------------------------

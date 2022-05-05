@@ -12,14 +12,42 @@ from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from typing import List, Union
 
 class Visualizer:
-    def __init__(self, name) -> None:
+    """The base Visualizer class. Intended to be extended by subclasses.
+    The UI should be constructed using the `init_gui()` function and updated based on the messages passed to it in the `update()` function.
+    
+    
+    Example::
+    
+        this is an exmaple showing how it works
+    
+    """
+    def __init__(self, name:str):
+        """
+
+        Args:
+            name (str): Name of the visualizer, for identification purpose
+        """
         self.name = name
 
     def init_gui(self):
-        # build the GUI here
+        """Build the GUI using dearpygui here
+
+
+        Raises:
+            NotImplementedError: Must be overrided by subclasses. 
+        """
+        
         raise NotImplementedError('init_gui must be implemented')
 
     def update(self, messages:List[Message]):
+        """ Update the interface.
+
+        Args:
+            messages (List[Message]): list of messages to be displayed
+
+        Raises:
+            NotImplementedError: Must be overrided by subclasses. 
+        """
         # function called to update the figures
         raise NotImplementedError('update must be implemented')
 

@@ -24,6 +24,7 @@ def getClusterColor(i:int,alpha=200):
 
 class SpikeClusterVisualizer(Visualizer):
 
+
     def __init__(self, name, num_channel=4, max_spikes = 500) -> None:
         super().__init__(name)
         self.num_channel = num_channel

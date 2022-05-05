@@ -17,8 +17,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Usage" href="Usage.html" />
-    <link rel="prev" title="Installation instructions" href="Installation.html" /> 
+    <link rel="next" title="Built-in Processor nodes" href="api.html" />
+    <link rel="prev" title="Usage" href="Usage.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -36,13 +36,22 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">User's guide:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation instructions</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">System architecture</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Usage.html">Usage</a></li>
-<li class="toctree-l1"><a class="reference internal" href="node_system_design.html">Design of the node system</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html">API documentation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">System architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#processor">Processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#message">Message</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#processor-context">Processor context</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#guiprocessor-and-visualizer">GUIProcessor and Visualizer</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Built-in Processor nodes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html#visualizers">Visualizers</a></li>
 </ul>
 
         </div>
@@ -71,22 +80,37 @@
              
   <div class="section" id="system-architecture">
 <h1>System architecture<a class="headerlink" href="#system-architecture" title="Permalink to this headline"></a></h1>
+<div class="section" id="processor">
+<h2>Processor<a class="headerlink" href="#processor" title="Permalink to this headline"></a></h2>
 <p>At the core of pyneurode is the <code class="docutils literal notranslate"><span class="pre">Processor</span></code> class. A <code class="docutils literal notranslate"><span class="pre">Processor</span></code> is a <code class="docutils literal notranslate"><span class="pre">multiprocessing.Process</span></code> that runs in its own Python process and have a item queue (based on <code class="docutils literal notranslate"><span class="pre">multiprocessing.Queue</span></code>) for input data. A <code class="docutils literal notranslate"><span class="pre">Processor</span></code> work on the items on its input queue and generate results to be put on the output queue, which in turn are the corresponding input queues for downstream processors.</p>
 <p><img alt="overview" src="_images/processor.png" /></p>
+</div>
+<div class="section" id="message">
+<h2>Message<a class="headerlink" href="#message" title="Permalink to this headline"></a></h2>
+<p>[TODO]</p>
+</div>
+<div class="section" id="processor-context">
+<h2>Processor context<a class="headerlink" href="#processor-context" title="Permalink to this headline"></a></h2>
+<p>[TODO]</p>
+</div>
+<div class="section" id="guiprocessor-and-visualizer">
+<h2>GUIProcessor and Visualizer<a class="headerlink" href="#guiprocessor-and-visualizer" title="Permalink to this headline"></a></h2>
+<p>[TODO]</p>
+</div>
 </div>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="Installation.html" class="btn btn-neutral float-left" title="Installation instructions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="Usage.html" class="btn btn-neutral float-right" title="Usage" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="Usage.html" class="btn btn-neutral float-left" title="Usage" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="Built-in Processor nodes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, Teris Tam.</p>
+    <p>&#169; Copyright 2022, Teris Tam (Nolan Lab, University of Edinburgh).</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

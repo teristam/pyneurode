@@ -3,28 +3,20 @@ Welcome to pyneurode's documentation!
 
 pyneurode (Python + neuron + node) is a real-time signal processing framework for neural recordings, with a special focus on online spike sorting and neural signal decoding. It has a robust architecture for parallel processing and can sort hundreds of channel of tetrode signals in real-time.
 
+
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: User's guide:
 
    Installation.md
+   Usage.md
    Architecture.md
 
 
-Usage
----------------
-
-.. toctree::
-   :maxdepth: 2
-    
-   Usage.md
-
-
-API reference
----------------
 
 .. toctree:: 
    :maxdepth: 2
+   :caption: API reference:
 
    api.rst
 

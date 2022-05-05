@@ -34,16 +34,16 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">User's guide:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Usage.html">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Architecture.html">System architecture</a></li>
 </ul>
+<p class="caption" role="heading"><span class="caption-text">API reference:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="Usage.html">Usage</a></li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="api.html">API documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Built-in Processor nodes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html#visualizers">Visualizers</a></li>
 </ul>
 
         </div>
@@ -77,9 +77,11 @@
  | <a href="#A"><strong>A</strong></a>
  | <a href="#B"><strong>B</strong></a>
  | <a href="#G"><strong>G</strong></a>
+ | <a href="#I"><strong>I</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#P"><strong>P</strong></a>
+ | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#U"><strong>U</strong></a>
  | <a href="#V"><strong>V</strong></a>
@@ -128,6 +130,22 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#pyneurode.processor_node.GUIProcessor.GUIProcessor">GUIProcessor (class in pyneurode.processor_node.GUIProcessor)</a>
 </li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#pyneurode.processor_node.AnalogVisualizer.AnalogVisualizer.init_gui">init_gui() (pyneurode.processor_node.AnalogVisualizer.AnalogVisualizer method)</a>
+
+      <ul>
+        <li><a href="api.html#pyneurode.processor_node.LatencyVisualizer.LatencyVisualizer.init_gui">(pyneurode.processor_node.LatencyVisualizer.LatencyVisualizer method)</a>
+</li>
+        <li><a href="api.html#pyneurode.processor_node.SpikeClusterVisualizer.SpikeClusterVisualizer.init_gui">(pyneurode.processor_node.SpikeClusterVisualizer.SpikeClusterVisualizer method)</a>
+</li>
+        <li><a href="api.html#pyneurode.processor_node.Visualizer.Visualizer.init_gui">(pyneurode.processor_node.Visualizer.Visualizer method)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -181,6 +199,14 @@
   </ul></td>
 </tr></table>
 
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#pyneurode.processor_node.GUIProcessor.GUIProcessor.register_visualizer">register_visualizer() (pyneurode.processor_node.GUIProcessor.GUIProcessor method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -216,8 +242,16 @@
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#pyneurode.processor_node.LatencyVisualizer.LatencyVisualizer.update">update() (pyneurode.processor_node.LatencyVisualizer.LatencyVisualizer method)</a>
+      <li><a href="api.html#pyneurode.processor_node.AnalogVisualizer.AnalogVisualizer.update">update() (pyneurode.processor_node.AnalogVisualizer.AnalogVisualizer method)</a>
+
+      <ul>
+        <li><a href="api.html#pyneurode.processor_node.LatencyVisualizer.LatencyVisualizer.update">(pyneurode.processor_node.LatencyVisualizer.LatencyVisualizer method)</a>
 </li>
+        <li><a href="api.html#pyneurode.processor_node.SpikeClusterVisualizer.SpikeClusterVisualizer.update">(pyneurode.processor_node.SpikeClusterVisualizer.SpikeClusterVisualizer method)</a>
+</li>
+        <li><a href="api.html#pyneurode.processor_node.Visualizer.Visualizer.update">(pyneurode.processor_node.Visualizer.Visualizer method)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -238,7 +272,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, Teris Tam.</p>
+    <p>&#169; Copyright 2022, Teris Tam (Nolan Lab, University of Edinburgh).</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

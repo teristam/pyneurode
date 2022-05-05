@@ -12,11 +12,17 @@ import time
 
 
 class GUIProcessor(BatchProcessor):
-    '''
-    A GUIProcessor is a processor that receive messages for plotting and displaying the GUI
-    Do not do time-consuming processing here
-    '''
+    """    A GUIProcessor is a processor that receive messages for plotting and displaying the GUI.
+    
+    .. note:: its process() function will be called frequently. Avoid doing time consuming processing there.
+    """
+
     def __init__(self, internal_buffer_size=1000):
+        """
+
+        Args:
+            internal_buffer_size (int, optional): size of the internal buffer to hold messages before they are displayed. Defaults to 1000.
+        """
         super().__init__(interval=1/60, internal_buffer_size=internal_buffer_size)
         self.visualizers:Dict(List(Visualizer)) = {}
 
@@ -38,8 +44,15 @@ class GUIProcessor(BatchProcessor):
 
 
 
-    def register_visualizer(self, visualizer:Visualizer, filters:List):
-        # register visualizer to creat the GUI and call during frame update
+    def register_visualizer(self, visualizer:Visualizer, filters:List[str]):
+        """Register a Visualizer object with the GUIProcessor. Only message of types specified in the
+        filter list will be passed to the visualizer.
+
+        Args:
+            visualizer (Visualizer): visualizer to be creat the GUI and call during frame update
+            filters (List[str]): names of message type to be passed to the visualizer. 
+        """
+        # 
         # each visualizer is associate with one or more message type definied in the filters
         
         for f in filters:
