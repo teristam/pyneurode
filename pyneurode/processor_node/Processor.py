@@ -83,6 +83,9 @@ class Channel:
             return None
 
 class Processor:
+    """The base class that handle real-time processing
+
+    """
     QUEUE_PULL_TIMEOUT=0.01
     # base class for all processor
     # when start, create its own process, open the port for sending and receiving data
@@ -102,9 +105,13 @@ class Processor:
         self.shutdown_event = ctx.shutdown_event
 
     def startup(self):
+        """ Functions to be first called before processing run. Can be overrided for customized startup behaviour
+        """
         self.log(logging.DEBUG, 'Starting up')
 
     def shutdown(self):
+        """ Close the queue and flush all the messages
+        """
         self.log(logging.DEBUG, 'Shut down')
         self.in_queue.close()
         self.in_queue.join_thread() #flush the all message to the pipe immediately so that it can be shut down properly
@@ -193,6 +200,18 @@ class Processor:
         return msg
 
     def process(self, message:Message) -> Message:
+        """The function to be override by subclass to perform realtime processing.
+        The overriden function should work on the passed-in message and return the results as another Message
+
+        Args:
+            message (Message): Data to be processed.
+
+        Raises:
+            NotImplementedError: This function must be implemented in subclasses
+
+        Returns:
+            Message: processed messages
+        """
         # override this function in sub-class to implement specific functions
         raise NotImplementedError(f'{self.__class__.__name__}.process is not implemented')
 

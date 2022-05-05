@@ -29,13 +29,20 @@ def acquire_data(queue:Queue, buffer:RingBufferG, shutdown_event:Event, pull_tim
 
 
 class BatchProcessor(Processor):
-    '''
-    A BatchProcessor starts an background thread to keep pulling the data, the process() function
+    """A BatchProcessor starts an background thread to keep pulling the data, the process() function
     is called every specified interval. During each specified interval, all the data acquired since last call to 
     process() will be send to the current process
-    '''
+
+    """
+ 
 
     def __init__(self, interval=0.001, internal_buffer_size = 10000, verbose=True):
+        """
+        Args:
+            interval (float, optional): Time interval at which batches of messages will be processed at once. Defaults to 0.001.
+            internal_buffer_size (int, optional): internal butter size at which the messages will be held untill they are processed. Defaults to 10000.
+            verbose (bool, optional): _description_. Defaults to True.
+        """
         super().__init__()
         self.ring_buffer = RingBufferG(internal_buffer_size)
         self.end_time = None
@@ -85,7 +92,14 @@ class BatchProcessor(Processor):
                     self.send(data)
 
     def process(self, messages:List[Message]=None):
-        # data passed to this function is a list
+        """Process the input messages. A batch of messages will be passed at a batch every time interval
+
+        Args:
+            messages (List[Message], optional): messages to be processed. Defaults to None.
+
+        Raises:
+            NotImplementedError: This function must be implemented in subclasses
+        """
         raise NotImplementedError(f'{self.__class__.__name__}.process is not implemented')
 
 

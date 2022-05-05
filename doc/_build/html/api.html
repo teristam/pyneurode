@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API documentation &mdash; pyneurode  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Usage" href="Usage.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> pyneurode
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Architecture.html">System architecture</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Usage.html">Usage</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#built-in-processor-nodes">Built-in Processor nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#processor">Processor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#batchprocessor">BatchProcessor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spikesortprocessor">SpikeSortProcessor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#syncdataprocessor">SyncDataProcessor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#guiprocessor">GUIProcessor</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#visualizers">Visualizers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#visualizer">Visualizer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#latencyvisualizer">LatencyVisualizer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#analogvisualizer">AnalogVisualizer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spikeclustervisualizer">SpikeClusterVisualizer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyneurode</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>API documentation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/api.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="api-documentation">
+<h1>API documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline"></a></h1>
+<div class="section" id="built-in-processor-nodes">
+<h2>Built-in Processor nodes<a class="headerlink" href="#built-in-processor-nodes" title="Permalink to this headline"></a></h2>
+<p>Each kind of processor node works on the data in its queue in a specific ways.</p>
+<div class="section" id="processor">
+<h3>Processor<a class="headerlink" href="#processor" title="Permalink to this headline"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyneurode.processor_node.Processor.Processor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyneurode.processor_node.Processor.</span></span><span class="sig-name descname"><span class="pre">Processor</span></span><a class="headerlink" href="#pyneurode.processor_node.Processor.Processor" title="Permalink to this definition"></a></dt>
+<dd><p>The base class that handle real-time processing</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.Processor.Processor.process">
+<span class="sig-name descname"><span class="pre">process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pyneurode.processor_node.Processor.Message</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pyneurode.processor_node.Processor.Message</span></span></span><a class="headerlink" href="#pyneurode.processor_node.Processor.Processor.process" title="Permalink to this definition"></a></dt>
+<dd><p>The function to be override by subclass to perform realtime processing.
+The overriden function should work on the passed-in message and return the results as another Message</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>message</strong> (<em>Message</em>) – Data to be processed.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – This function must be implemented in subclasses</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>processed messages</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Message</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.Processor.Processor.shutdown">
+<span class="sig-name descname"><span class="pre">shutdown</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.Processor.Processor.shutdown" title="Permalink to this definition"></a></dt>
+<dd><p>Close the queue and flush all the messages</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.Processor.Processor.startup">
+<span class="sig-name descname"><span class="pre">startup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.Processor.Processor.startup" title="Permalink to this definition"></a></dt>
+<dd><p>Functions to be first called before processing run. Can be overrided for customized startup behaviour</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="batchprocessor">
+<h3>BatchProcessor<a class="headerlink" href="#batchprocessor" title="Permalink to this headline"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyneurode.processor_node.BatchProcessor.BatchProcessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyneurode.processor_node.BatchProcessor.</span></span><span class="sig-name descname"><span class="pre">BatchProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">internal_buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.BatchProcessor.BatchProcessor" title="Permalink to this definition"></a></dt>
+<dd><p>A BatchProcessor starts an background thread to keep pulling the data, the process() function
+is called every specified interval. During each specified interval, all the data acquired since last call to
+process() will be send to the current process</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.BatchProcessor.BatchProcessor.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">internal_buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.BatchProcessor.BatchProcessor.__init__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>interval</strong> (<em>float</em><em>, </em><em>optional</em>) – Time interval at which batches of messages will be processed at once. Defaults to 0.001.</p></li>
+<li><p><strong>internal_buffer_size</strong> (<em>int</em><em>, </em><em>optional</em>) – internal butter size at which the messages will be held untill they are processed. Defaults to 10000.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – _description_. Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.BatchProcessor.BatchProcessor.process">
+<span class="sig-name descname"><span class="pre">process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">messages</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">pyneurode.processor_node.Processor.Message</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.BatchProcessor.BatchProcessor.process" title="Permalink to this definition"></a></dt>
+<dd><p>Process the input messages. A batch of messages will be passed at a batch every time interval</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>messages</strong> (<em>List</em><em>[</em><em>Message</em><em>]</em><em>, </em><em>optional</em>) – messages to be processed. Defaults to None.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – This function must be implemented in subclasses</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.BatchProcessor.BatchProcessor.startup">
+<span class="sig-name descname"><span class="pre">startup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.BatchProcessor.BatchProcessor.startup" title="Permalink to this definition"></a></dt>
+<dd><p>Functions to be first called before processing run. Can be overrided for customized startup behaviour</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="spikesortprocessor">
+<h3>SpikeSortProcessor<a class="headerlink" href="#spikesortprocessor" title="Permalink to this headline"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyneurode.processor_node.SpikeSortProcessor.SpikeSortProcessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyneurode.processor_node.SpikeSortProcessor.</span></span><span class="sig-name descname"><span class="pre">SpikeSortProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">internal_buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_num_spikes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_pca</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.SpikeSortProcessor.SpikeSortProcessor" title="Permalink to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.SpikeSortProcessor.SpikeSortProcessor.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">internal_buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_num_spikes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_pca</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.SpikeSortProcessor.SpikeSortProcessor.__init__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>interval</strong> (<em>float</em><em>, </em><em>optional</em>) – Time interval at which batches of messages will be processed at once. Defaults to 0.001.</p></li>
+<li><p><strong>internal_buffer_size</strong> (<em>int</em><em>, </em><em>optional</em>) – internal butter size at which the messages will be held untill they are processed. Defaults to 10000.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – _description_. Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.SpikeSortProcessor.SpikeSortProcessor.process">
+<span class="sig-name descname"><span class="pre">process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msgs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.SpikeSortProcessor.SpikeSortProcessor.process" title="Permalink to this definition"></a></dt>
+<dd><p>Process the input messages. A batch of messages will be passed at a batch every time interval</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>messages</strong> (<em>List</em><em>[</em><em>Message</em><em>]</em><em>, </em><em>optional</em>) – messages to be processed. Defaults to None.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – This function must be implemented in subclasses</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.SpikeSortProcessor.SpikeSortProcessor.startup">
+<span class="sig-name descname"><span class="pre">startup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.SpikeSortProcessor.SpikeSortProcessor.startup" title="Permalink to this definition"></a></dt>
+<dd><p>Functions to be first called before processing run. Can be overrided for customized startup behaviour</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="syncdataprocessor">
+<h3>SyncDataProcessor<a class="headerlink" href="#syncdataprocessor" title="Permalink to this headline"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyneurode.processor_node.SyncDataProcessor.SyncDataProcessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyneurode.processor_node.SyncDataProcessor.</span></span><span class="sig-name descname"><span class="pre">SyncDataProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">internal_buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.SyncDataProcessor.SyncDataProcessor" title="Permalink to this definition"></a></dt>
+<dd><p>Synchronize two sources of time series data</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.SyncDataProcessor.SyncDataProcessor.process">
+<span class="sig-name descname"><span class="pre">process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.SyncDataProcessor.SyncDataProcessor.process" title="Permalink to this definition"></a></dt>
+<dd><p>Process the input messages. A batch of messages will be passed at a batch every time interval</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>messages</strong> (<em>List</em><em>[</em><em>Message</em><em>]</em><em>, </em><em>optional</em>) – messages to be processed. Defaults to None.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – This function must be implemented in subclasses</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.SyncDataProcessor.SyncDataProcessor.startup">
+<span class="sig-name descname"><span class="pre">startup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.SyncDataProcessor.SyncDataProcessor.startup" title="Permalink to this definition"></a></dt>
+<dd><p>Functions to be first called before processing run. Can be overrided for customized startup behaviour</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="guiprocessor">
+<h3>GUIProcessor<a class="headerlink" href="#guiprocessor" title="Permalink to this headline"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyneurode.processor_node.GUIProcessor.GUIProcessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyneurode.processor_node.GUIProcessor.</span></span><span class="sig-name descname"><span class="pre">GUIProcessor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">internal_buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.GUIProcessor.GUIProcessor" title="Permalink to this definition"></a></dt>
+<dd><p>A GUIProcessor is a processor that receive messages for plotting and displaying the GUI
+Do not do time-consuming processing here</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.GUIProcessor.GUIProcessor.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">internal_buffer_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.GUIProcessor.GUIProcessor.__init__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>interval</strong> (<em>float</em><em>, </em><em>optional</em>) – Time interval at which batches of messages will be processed at once. Defaults to 0.001.</p></li>
+<li><p><strong>internal_buffer_size</strong> (<em>int</em><em>, </em><em>optional</em>) – internal butter size at which the messages will be held untill they are processed. Defaults to 10000.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – _description_. Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.GUIProcessor.GUIProcessor.process">
+<span class="sig-name descname"><span class="pre">process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">messages</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">pyneurode.processor_node.Processor.Message</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.GUIProcessor.GUIProcessor.process" title="Permalink to this definition"></a></dt>
+<dd><p>Process the input messages. A batch of messages will be passed at a batch every time interval</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>messages</strong> (<em>List</em><em>[</em><em>Message</em><em>]</em><em>, </em><em>optional</em>) – messages to be processed. Defaults to None.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – This function must be implemented in subclasses</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.GUIProcessor.GUIProcessor.shutdown">
+<span class="sig-name descname"><span class="pre">shutdown</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.GUIProcessor.GUIProcessor.shutdown" title="Permalink to this definition"></a></dt>
+<dd><p>Close the queue and flush all the messages</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.GUIProcessor.GUIProcessor.startup">
+<span class="sig-name descname"><span class="pre">startup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.GUIProcessor.GUIProcessor.startup" title="Permalink to this definition"></a></dt>
+<dd><p>Functions to be first called before processing run. Can be overrided for customized startup behaviour</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="visualizers">
+<h2>Visualizers<a class="headerlink" href="#visualizers" title="Permalink to this headline"></a></h2>
+<p>Visualizers are responsible for visualizing messages on the user interface using dearpygui</p>
+<div class="section" id="visualizer">
+<h3>Visualizer<a class="headerlink" href="#visualizer" title="Permalink to this headline"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyneurode.processor_node.Visualizer.Visualizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyneurode.processor_node.Visualizer.</span></span><span class="sig-name descname"><span class="pre">Visualizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.Visualizer.Visualizer" title="Permalink to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.Visualizer.Visualizer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pyneurode.processor_node.Visualizer.Visualizer.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="latencyvisualizer">
+<h3>LatencyVisualizer<a class="headerlink" href="#latencyvisualizer" title="Permalink to this headline"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyneurode.processor_node.LatencyVisualizer.LatencyVisualizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyneurode.processor_node.LatencyVisualizer.</span></span><span class="sig-name descname"><span class="pre">LatencyVisualizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subplot_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(3,</span> <span class="pre">3)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.LatencyVisualizer.LatencyVisualizer" title="Permalink to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.LatencyVisualizer.LatencyVisualizer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subplot_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(3,</span> <span class="pre">3)</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pyneurode.processor_node.LatencyVisualizer.LatencyVisualizer.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.LatencyVisualizer.LatencyVisualizer.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">messages</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">pyneurode.processor_node.Processor.Message</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.LatencyVisualizer.LatencyVisualizer.update" title="Permalink to this definition"></a></dt>
+<dd><ol class="arabic simple">
+<li><p>check if the metrics is already in the current dictionary</p></li>
+<li><p>if not, add it to the existing dictionary, update the x axis tick</p></li>
+<li><p>set the value accordingly</p></li>
+</ol>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="analogvisualizer">
+<h3>AnalogVisualizer<a class="headerlink" href="#analogvisualizer" title="Permalink to this headline"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyneurode.processor_node.AnalogVisualizer.AnalogVisualizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyneurode.processor_node.AnalogVisualizer.</span></span><span class="sig-name descname"><span class="pre">AnalogVisualizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.AnalogVisualizer.AnalogVisualizer" title="Permalink to this definition"></a></dt>
+<dd><p>Display a analog value</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.AnalogVisualizer.AnalogVisualizer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pyneurode.processor_node.AnalogVisualizer.AnalogVisualizer.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="spikeclustervisualizer">
+<h3>SpikeClusterVisualizer<a class="headerlink" href="#spikeclustervisualizer" title="Permalink to this headline"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyneurode.processor_node.SpikeClusterVisualizer.SpikeClusterVisualizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyneurode.processor_node.SpikeClusterVisualizer.</span></span><span class="sig-name descname"><span class="pre">SpikeClusterVisualizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_channel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_spikes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyneurode.processor_node.SpikeClusterVisualizer.SpikeClusterVisualizer" title="Permalink to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="pyneurode.processor_node.SpikeClusterVisualizer.SpikeClusterVisualizer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_channel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_spikes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#pyneurode.processor_node.SpikeClusterVisualizer.SpikeClusterVisualizer.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Usage.html" class="btn btn-neutral float-left" title="Usage" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Teris Tam.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
