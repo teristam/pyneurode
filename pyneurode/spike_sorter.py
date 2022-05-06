@@ -5,11 +5,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.computation import align
 # import seaborn as sns
-import spikeinterface.comparison as sc
-import spikeinterface.extractors as se
-import spikeinterface.sorters as ss
-import spikeinterface.toolkit as st
-import spikeinterface.widgets as sw
+
 from sklearn import metrics
 from sklearn.cluster import DBSCAN
 from sklearn import cluster
@@ -539,61 +535,6 @@ def sort_spikes_online(df_ref, df2sort, eps=1, pca_component=6):
     return df_sorted, df_sorted_all,template_cluster_id
 
 
-def offline_mountainsort(neuroData,start_timestamp,Fs=30000,
-    time_bin=0.1):
-    """Sort data using mountainsort offline
-
-    Args:
-        neuroData (np.array): channel x time
-        start_timestamp (int): timestamp of first data point
-        Fs (int, optional): sampling frequency. Defaults to 30000.
-        time_bin (float, optional): size of each time bin. Defaults to 0.1.
-
-    Returns:
-        np.ndarray: array of spike count of each neuron
-    """
-
-
-
-    # make recording 
-    recording = se.NumpyRecordingExtractor(timeseries=neuroData,sampling_frequency=Fs)
-    recording.load_probe_file('tetrode_16.prb')
-    recording_f = st.preprocessing.bandpass_filter(recording, freq_min=300, freq_max=6000)
-
-    # sort
-    ms4_params = ss.get_default_params('mountainsort4')
-    ms4_params['curation']=True
-    ms4_params['adjust_radius']  = 100
-    sorting_MS4_2 = ss.run_mountainsort4(recording=recording,output_folder='sorting_tmp',verbose=True)
-
-    # curation
-    sorting_ms4_curated = st.curation.threshold_snrs(sorting=sorting_MS4_2, recording = recording,
-    threshold = 4, threshold_sign='less',
-        max_snr_spikes_per_unit=100, apply_filter=False) #remove when less than threshold
-    print(sorting_ms4_curated.get_unit_ids())
-
-    sorting_ms4_curated=st.curation.threshold_firing_rates(sorting_ms4_curated,
-        threshold=0.5, threshold_sign='less', duration_in_frames=recording.get_num_frames())
-    print(sorting_ms4_curated.get_unit_ids())
-
-    sorting_ms4_curated=st.curation.threshold_isi_violations(sorting_ms4_curated, 
-        threshold = 0.9,duration_in_frames=recording.get_num_frames(), threshold_sign='greater' )
-    print(sorting_ms4_curated.get_unit_ids())
-
-    # make spiketrain
-    time_bin_start = 0
-    bins = np.arange(time_bin_start, neuroData.shape[1]/Fs, time_bin )
-
-    # extract the spike train, and bin it in time
-    spiketrain = []
-    for i in sorting_ms4_curated.get_unit_ids():
-        spk_train = sorting_ms4_curated.get_unit_spike_train(i)
-        spk_train = (spk_train - start_timestamp)/Fs #convert to s
-        spiketrain.append(np.histogram(spk_train,bins)[0])
-
-    spiketrain=np.stack(spiketrain)   
-
-    return spiketrain 
 
 def findMatch(y,x):
     #match position of x in y
