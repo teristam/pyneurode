@@ -134,3 +134,7 @@ mountainsort4_output/
 sorting_tmp/
 
 *.prof
+
+
+# Sphinx
+doc/_build/
