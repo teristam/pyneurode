@@ -11,4 +11,5 @@ scipy[all]
 Cython
 Sphinx
 myst-parser
+palettable
 #need to install isosplit_python from github
