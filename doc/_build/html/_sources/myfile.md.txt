@@ -1,4 +1,0 @@
-### THis is some title
-
-- this is a list
-- this is another item
