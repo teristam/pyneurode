@@ -8,6 +8,7 @@ networkx
 pyzmq
 jupyterlab
 scipy[all]
+Cython
 Sphinx
 myst-parser
 #need to install isosplit_python from github
