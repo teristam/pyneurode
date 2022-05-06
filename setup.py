@@ -44,6 +44,7 @@ setup(
         'myst-parser',
         'palettable',
         'tqdm',
+        'pytest',
         'sphinx_rtd_theme',
         'isosplit5 @ git+https://github.com/magland/isosplit5_python'
     ],
