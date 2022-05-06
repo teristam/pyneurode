@@ -1,19 +1,33 @@
-from setuptools import setup
+from setuptools import setup, Extension
+import setuptools
 from Cython.Build import cythonize
+from Cython.Distutils import build_ext
 import numpy
+import subprocess
+import sys
+
+
+USE_CYTHON = False
+
+ext = '.pyx' if USE_CYTHON else '.c'
+
+extensions = [Extension(name='pyneurode.spike_sorter_cy', 
+                  sources=['src/pyneurode/spike_sorter_cy'+ext], 
+                  include_dirs=[numpy.get_include()],
+                  language='c')]
+
+if USE_CYTHON:
+    from Cython.Build import cythonize
+    extensions = cythonize(extensions)
 
 setup(
     name='pyneurode',
     version='0.1.0',
-    packages=['pyneurode',],
+    packages=setuptools.find_packages('src'),
+    package_dir={'':'src'},
     author='Teris Tam',
     long_description=open('README.md').read(),
-    ext_modules=cythonize('pyneurode/spike_sorter_cy.pyx'),
-    include_dirs=[numpy.get_include()], #for cythons
-    setup_requries=[
-        'cython',
-        'setuptools>=18.0',
-    ],
+    ext_modules=extensions,
     install_requires=[
         'matplotlib',
         'dearpygui == 1.3.1',
@@ -24,12 +38,14 @@ setup(
         'networkx',
         'pyzmq',
         'jupyterlab',
-        'scipy[all]',
+        'scipy',
         'Cython',
         'Sphinx',
         'myst-parser',
         'palettable',
         'tqdm',
+        'sphinx_rtd_theme',
         'isosplit5 @ git+https://github.com/magland/isosplit5_python'
-    ]
+    ],
+    zip_safe=False
 )
