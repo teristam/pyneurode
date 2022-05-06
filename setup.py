@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 from Cython.Build import cythonize
 import numpy
 
@@ -30,5 +30,6 @@ setup(
         'myst-parser',
         'palettable',
         'tqdm',
+        'isosplit5 @ git+https://github.com/magland/isosplit5_python'
     ]
 )
