@@ -138,3 +138,4 @@ sorting_tmp/
 
 # Sphinx
 doc/_build/
+pyneurode/*.c
