@@ -1,4 +1,4 @@
-from online_sorter import simpleDownSample
+from pyneurode.spike_sorter import simpleDownSample
 import numpy as np 
 from pyneurode.spike_sorter import *
 import pytest
