@@ -1,12 +1,8 @@
 from pyneurode.processor_node.GUIProcessor import GUIProcessor
 from pyneurode.processor_node.Processor import *
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
-from pyneurode.processor_node.FileReaderSource import FileReaderSource
 from pyneurode.processor_node.SpikeSortProcessor import SpikeSortProcessor
 from pyneurode.processor_node.SyncDataProcessor import SyncDataProcessor
-import pyneurode as dc
-import logging
-import dearpygui.dearpygui as dpg
 from pyneurode.processor_node.AnalogVisualizer import *
 from pyneurode.processor_node.SpikeClusterVisualizer import SpikeClusterVisualizer
 from pyneurode.processor_node.LatencyVisualizer import LatencyVisualizer
