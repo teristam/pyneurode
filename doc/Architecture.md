@@ -6,13 +6,9 @@ At the core of pyneurode is the `Processor` class. A `Processor` is a `multiproc
 ![overview](images/processor.png)
 
 ## Message
+`Processor` communicate to each other via `Message`. A `Message` is a Python `dataclass` that has a 3 fields: `type`, `data` and optionally `timestamp`. The `type` is a string that indicate what data is stored in a `Message`. It can be any name, as long as downstream processor recognize it. `data` can be any anything supported by Python's `multiprocessing.Queue`. 
 
-[TODO]
-
-## Processor context
-
-[TODO]
 
 ## GUIProcessor and Visualizer
+The `GUIProcessor` is responsible for creating the graphical interface in pyNeurode. It relies on various `Visualizer` objects to show different visualization for various message type. We use DearPyGUI as our GUI toolkit as it is GPU accelerated and work across all three major platforms (Windows, MacOS and Linux).
 
-[TODO]
