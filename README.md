@@ -1,3 +1,6 @@
+[![Documentation Status](https://readthedocs.org/projects/pyneurode/badge/?version=latest)](https://pyneurode.readthedocs.io/en/latest/?badge=latest)
+
+
 # pyneurode
 This repository will hold the source code of pyNeurode when it is released
 
