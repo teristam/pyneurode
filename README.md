@@ -8,3 +8,4 @@ For technical details please see our [preprint](https://www.biorxiv.org/content/
 
 Please see the [documentation](https://pyneurode.readthedocs.io/en/latest/) for how to use the library.
 
+The project is still under heavy development. Please submit an issue if you encounter any problem.
