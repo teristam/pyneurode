@@ -138,3 +138,5 @@ sorting_tmp/
 
 # Sphinx
 doc/_build/
+
+data
