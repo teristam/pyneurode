@@ -216,6 +216,7 @@ class SpikeSortProcessor(BatchProcessor):
 
 class SpikeTrainMessage(Message):
     """Message that contains the binned spike train
+    spiketrain is in the format (neuron x time)
     """
     type = 'spike_train'
 
@@ -234,7 +235,7 @@ class SortedSpikeMessage(Message):
     def __init__(self, sorted_dataframe:pd.DataFrame):
         
         if isinstance(sorted_dataframe, pd.DataFrame):
-            self.data = pd.DataFrame
+            self.data = sorted_dataframe
         else:
             raise TypeError('The input should be a pandas dataframe')
         

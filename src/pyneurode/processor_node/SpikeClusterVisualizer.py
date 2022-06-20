@@ -160,7 +160,7 @@ class SpikeClusterVisualizer(Visualizer):
 
     def drawPCA(self):
         cluster2plot = dpg.get_value(self.list_box) #will return a string
-        tetrode = int(cluster2plot)%100 # cluster id is in the form 201, 202 etc, where n%100 is the channel
+        tetrode = int(float(cluster2plot))%100 # cluster id is in the form 201, 202 etc, where n%100 is the channel
         cur_tetrode_cluster = [c for c in self.cluster_list if c%100==tetrode] #find the cluster id for current tetrode
 
         for i,cid in enumerate(cur_tetrode_cluster):
@@ -189,8 +189,9 @@ class SpikeClusterVisualizer(Visualizer):
             # only keep a certain number of spikes
             #TODO ideally a separate queue for each cluster, probably using dequeue after df.to_dict()?
             df = msg.data
+            # print('df is ', len(df))
+            # self.df_sort = pd.concat([self.df_sort, df], ignore_index=True)
             self.df_sort = self.df_sort.append(df, ignore_index=True)
-            # print(len(self.df_sort))
             if len(self.df_sort) > self.max_spike:
                 self.df_sort = self.df_sort[-self.max_spike:-1]
 

@@ -41,6 +41,9 @@ class ArduinoSink(Sink):
                 dport = int(s[0][1:])
                 value = int(s[1])
                 self.board.digital[dport].write(value)
+        
+        if isinstance(message, ArduinoWaitMessage):
+            self.board.pass_time(message.data)
 
 
 
@@ -50,6 +53,22 @@ class ArduinoMessage(Message):
     def __init__(self, digital_port, value:bool):   
         self.data =f'D{digital_port:d} {int(value)}'
         self.timestamp = time.time()
+        
+class ArduinoWaitMessage(Message):
+    '''Message to ask arduino to wait'''
+    
+    type = 'arduino_wait'
+    
+    def __init__(self, wait_time:float):
+        """Constructor
+
+        Args:
+            wait_time (float): time to wait in second
+        """
+        self.data = wait_time
+        self.timestamp = time.time()   
+        
+ 
 
 if __name__ == '__main__':
     

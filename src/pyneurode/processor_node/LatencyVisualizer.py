@@ -6,7 +6,7 @@ import dearpygui.dearpygui as dpg
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 import numpy as np
 from .ProcessorContext import ProcessorContext
-from .Processor import RandomMsgTimeSource
+from .Processor import MsgTimeSource
 from .GUIProcessor import GUIProcessor
 import random
 
