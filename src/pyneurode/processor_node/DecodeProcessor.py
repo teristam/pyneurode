@@ -198,26 +198,26 @@ class DecodeProcessor(Processor):
 
 
 
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-    start  = time.time()
-    echofile = FileEchoSink.get_temp_filename()
-    print(echofile)
+# if __name__ == '__main__':
+#     logging.basicConfig(level=logging.DEBUG)
+#     start  = time.time()
+#     echofile = FileEchoSink.get_temp_filename()
+#     print(echofile)
 
-    with ProcessorContext() as ctx:
-        ctx.makeProcessor('DummySource', DummpyNumpyTimeSource, interval=0.2, shape=(10,5))
-        ctx.makeProcessor('Decode', DecodeProcessor)
-        ctx.makeProcessor('Echo', FileEchoSink, filename=echofile)
+#     with ProcessorContext() as ctx:
+#         ctx.makeProcessor('DummySource', DummpyNumpyTimeSource, interval=0.2, shape=(10,5))
+#         ctx.makeProcessor('Decode', DecodeProcessor)
+#         ctx.makeProcessor('Echo', FileEchoSink, filename=echofile)
 
-        ctx.connect('DummySource', 'Decode')
-        ctx.connect('Decode', 'Echo')
+#         ctx.connect('DummySource', 'Decode')
+#         ctx.connect('Decode', 'Echo')
 
-        ctx.start()
+#         ctx.start()
 
-        time.sleep(20)
-        logging.debug('Sending the stop signal now')
-        ctx.shutdown_event.set()
+#         time.sleep(20)
+#         logging.debug('Sending the stop signal now')
+#         ctx.shutdown_event.set()
 
-    time.sleep(1)  
-    data = FileEchoSink.open_data_dump(echofile)
-    print(len(data))
+#     time.sleep(1)  
+#     data = FileEchoSink.open_data_dump(echofile)
+#     print(len(data))
