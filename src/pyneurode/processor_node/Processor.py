@@ -138,7 +138,7 @@ class Processor:
         # if no output_name is specified, then output to all
         # self.log(logging.DEBUG, f'Sending {data}')
 
-        if data is not None and not type(data) in [Message, list, tuple]:
+        if data is not None and not isinstance(data,Message) and not type(data) in [list, tuple]:
             raise TypeError(f'Data to be sent must be wrapped as a Message object: {data}')
 
         if data is not None:
@@ -328,9 +328,15 @@ class DummyTimeSource(TimeSource):
         self.log(logging.DEBUG, f'Producing msg {self.msg}')
         return Message('dummy',self.msg)
 
-class RandomMsgTimeSource(TimeSource):
-    # Reply the supplied message 
-    def __init__(self, interval, messages:List[Message]):
+class MsgTimeSource(TimeSource):
+    # Reply the supplied message in sequence
+    def __init__(self, interval:float, messages:List[Message]):
+        """Construct a Time source that send message sequentially at fixed interval
+
+        Args:
+            interval (float): interval in second
+            messages (List[Message]): list of message to send
+        """
         super().__init__(interval)
         self.msg_list = messages
         self.msg_counter = 0
@@ -340,7 +346,8 @@ class RandomMsgTimeSource(TimeSource):
         # self.log(logging.DEBUG, f'Producing msg {msg}')
         self.msg_counter += 1
         return msg
-
+    
+    
 class AddProcessor(Processor):
     def process(self, msg):
         return Message('dummy',msg.data + 100)
