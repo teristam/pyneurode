@@ -31,7 +31,7 @@ if  __name__ == '__main__':
         #TODO: need some way to query the output type of processor easily
 
         # reading too fast may overflow the pipe
-        fileReader = FileReaderSource('data/data_packets_M2_D23_1910.pkl',interval=0.01)
+        fileReader = FileReaderSource('../pyneurode_study/data/data_packets_M2_D23.pkl',interval=0.01)
         spikeSortProcessor = SpikeSortProcessor(interval=0.001)
         syncDataProcessor = SyncDataProcessor(interval=0.02)
         gui = GUIProcessor()
