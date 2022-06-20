@@ -279,7 +279,7 @@ def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1,
         standard_scalers[e_ids] = standard_scaler
         #
         if labels is not None:
-            df.loc[df.electrode_ids==e_ids,'cluster_id'] = [(e_ids+1)*100 +(l+1) for l in labels] #make unique id for each electrode
+            df.loc[df.electrode_ids==e_ids,'cluster_id'] = [int((e_ids+1)*100 +(l+1)) for l in labels] #make unique id for each electrode
         else:
            df.loc[df.electrode_ids==e_ids,'cluster_id'] = -1
 
@@ -326,6 +326,7 @@ def template_match_all_electrodes_fast(df, templates, template_electrode_id,temp
     results = df.apply(sort_spike_row,axis=1, 
         args=(templates, template_cluster_id, template_electrode_id, pca_transformers, standard_scalers), result_type='expand')
     df[['cluster_id', 'spike_waveform_aligned','sorting_time', 'pc_norm']] = results
+    df.cluster_id = df.cluster_id.astype(int)
 
     return df 
 

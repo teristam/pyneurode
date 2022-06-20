@@ -132,9 +132,8 @@ class SpikeClusterVisualizer(Visualizer):
         #TODO: add button to auto fit all graphs
         
         # Plot the waveform
-        # print(cluster_ids)
-        sel_cluster_id = dpg.get_value(self.list_box)
-        df_sel = self.df_sort[self.df_sort.cluster_id == sel_cluster_id]
+        sel_cluster_id = int(dpg.get_value(self.list_box))
+        df_sel = self.df_sort[self.df_sort.cluster_id == int(sel_cluster_id)]
         if len(df_sel)>0:
             spike_waveforms = df_sel.spike_waveform_aligned.values
             xdata = np.arange(len(spike_waveforms[0])//self.num_channel).tolist()
@@ -151,7 +150,7 @@ class SpikeClusterVisualizer(Visualizer):
         # get the theme for a specific cluster_id
 
         # first get all the clusters in the same tetrode
-        tetrode = cluster2plot%100 # cluster id is always in the form C<tetrode id>_<cluster id>
+        tetrode = cluster2plot%100 
         cur_tetrode_cluster = [c for c in self.cluster_list if c%100==tetrode] #find the cluster id for current tetrode
         
         # find the proper index in the theme
@@ -160,7 +159,7 @@ class SpikeClusterVisualizer(Visualizer):
 
     def drawPCA(self):
         cluster2plot = dpg.get_value(self.list_box) #will return a string
-        tetrode = int(float(cluster2plot))%100 # cluster id is in the form 201, 202 etc, where n%100 is the channel
+        tetrode = int(cluster2plot)%100 # cluster id is in the form 201, 202 etc, where n%100 is the channel
         cur_tetrode_cluster = [c for c in self.cluster_list if c%100==tetrode] #find the cluster id for current tetrode
 
         for i,cid in enumerate(cur_tetrode_cluster):
@@ -200,6 +199,7 @@ class SpikeClusterVisualizer(Visualizer):
             if len(self.df_sort)>0:
                 #update the cluster id
                 cluster_ids = set(self.df_sort.cluster_id.unique())
+                # print('cluster id in visuzlier: ', self.df_sort.cluster_id)
                 if not cluster_ids in self.cluster_list:
                     self.cluster_list = self.cluster_list.union(cluster_ids)
                     items = sorted(list(self.cluster_list))

@@ -110,6 +110,7 @@ class SpikeSortProcessor(BatchProcessor):
             self.standard_scalers = standard_scalers
 
             (self.templates, self.template_cluster_id, self.template_electrode_id) = generate_spike_templates(df)
+            print(self.template_cluster_id)
 
             # Some book keeping
             self.spike_len_prev = len(self.spike_data) # update previous spike data len
@@ -139,6 +140,8 @@ class SpikeSortProcessor(BatchProcessor):
             else:
                 self.df_sort = template_match_all_electrodes_cy(self.df_sort, self.templates, 
                         self.template_electrode_id, self.template_cluster_id)
+                
+            # print(self.df_sort.cluster_id)
 
             # print(f'Template matching of {len(df_sort)} spikes takes {time.time()-start_time:.3f}')
 
