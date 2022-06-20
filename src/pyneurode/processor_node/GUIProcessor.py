@@ -1,6 +1,7 @@
 from __future__ import annotations # for postponed evaluation
 from multiprocessing import Event
-from pyneurode.processor_node.Processor import Processor, Message
+from pyneurode.processor_node.Processor import ProcessError
+from pyneurode.processor_node.Message import Message
 from .BatchProcessor import BatchProcessor
 import dearpygui.dearpygui as dpg
 import logging

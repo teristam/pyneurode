@@ -1,4 +1,5 @@
 from pyneurode.processor_node.Processor import *
+from pyneurode.processor_node.Message import Message
 from pyneurode.RingBuffer.RingBuffer import *
 from pyneurode.processor_node.ProcessorContext import *
 import numpy as np 

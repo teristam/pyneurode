@@ -1,4 +1,5 @@
-from pyneurode.processor_node.Processor import Message, MsgTimeSource, Sink
+from pyneurode.processor_node.Processor import MsgTimeSource, Sink
+from pyneurode.processor_node.Message import Message
 from pyfirmata import Arduino, util
 import logging
 import time
@@ -44,8 +45,9 @@ class ArduinoSink(Sink):
 
 
 class ArduinoMessage(Message):
-    def __init__(self, digital_port, value:bool):
-        self.type = 'arduino'
+    type = 'arduino'
+    
+    def __init__(self, digital_port, value:bool):   
         self.data =f'D{digital_port:d} {int(value)}'
         self.timestamp = time.time()
 

@@ -1,6 +1,8 @@
 from __future__ import annotations # for postponed evaluation
 import functools
 import logging
+
+from pyneurode.processor_node.Message import Message
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
 import os
 import pickle
@@ -31,23 +33,6 @@ def logger(name, level, msg, exc_info=None):
     myLogger.log(level, f'\t{minute}:{seconds:.2f} {name:15} \t\t {msg}', exc_info=exc_info)
 
 
-@dataclass
-class Message:
-    '''
-    Simple dataclass that transfer data between Processors
-    #TODO: use a different class/type for each type of messages, need a better system to handle
-    # the enum
-    '''
-    type: str
-    data: Any
-    timestamp: float = None
-
-    def __repr__(self) -> str:
-
-        if isinstance(self.data, np.ndarray):
-            return f'Message (type: {self.type}, data shape: {self.data.shape}, timestamp: {self.timestamp})'
-        else:
-            return f'Message (type: {self.type}, data: {self.data}, timestamp: {self.timestamp})'
 
 
 class Channel:

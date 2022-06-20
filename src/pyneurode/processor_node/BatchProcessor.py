@@ -6,6 +6,7 @@ from pyneurode import RingBuffer
 from pyneurode.RingBuffer.RingBufferG import RingBufferG
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 import time
+from pyneurode.processor_node.Message import Message
 from typing import List
 
 def acquire_data(queue:Queue, buffer:RingBufferG, shutdown_event:Event, pull_time_out, need_pause:threading.Event, queue_max):

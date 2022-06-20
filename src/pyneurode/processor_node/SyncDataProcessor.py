@@ -3,6 +3,7 @@ from pyneurode.RingBuffer.RingBufferG import RingBufferG
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 import logging
 from pyneurode.processor_node.Processor import *
+from pyneurode.processor_node.Message import Message
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 from pyneurode.processor_node.FileReaderSource import FileReaderSource
 from pyneurode.processor_node.SpikeSortProcessor import SpikeSortProcessor

@@ -7,6 +7,7 @@ import pickle
 import time
 import logging
 import numpy as np 
+from pyneurode.processor_node.Message import Message
 from pyneurode.spike_sorter import simpleDownSample
 ADC_CHANNEL = 20
 

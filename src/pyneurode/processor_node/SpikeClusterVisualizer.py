@@ -4,7 +4,7 @@ import dearpygui.dearpygui as dpg
 import numpy as np
 import pandas as pd
 from sklearn import cluster
-from .Processor import Message
+from pyneurode.processor_node.Message import Message
 from .Visualizer import Visualizer
 
 

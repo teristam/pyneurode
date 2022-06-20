@@ -1,7 +1,7 @@
 # Visualize the latency of various processor
 from .Visualizer import Visualizer
 from typing import List
-from .Processor import Message
+from pyneurode.processor_node.Message import Message
 import dearpygui.dearpygui as dpg
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 import numpy as np

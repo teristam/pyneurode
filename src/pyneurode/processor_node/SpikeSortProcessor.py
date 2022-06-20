@@ -13,6 +13,8 @@ from pyneurode.processor_node.ProcessorContext import ProcessorContext
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from pyneurode.spike_sorter import *
 from pyneurode.spike_sorter_cy import template_match_all_electrodes_cy
+from pyneurode.processor_node.Message import Message, MetricsMessage
+
 import pyneurode.utils
 import warnings
 
@@ -191,20 +193,52 @@ class SpikeSortProcessor(BatchProcessor):
 
             # also calculate the time to sort each spikes in ms
             if len(self.df_sort)>0:
-                metrics_msg = Message(
-                        "metrics",
-                        {
-                            "processor": self.proc_name,
-                            "measures": {
-                                "time_per_spike": lapsed_time*1000/len(self.df_sort), #in ms
-                                'in_queue_size': self.in_queue.qsize()
-                            },
-                        },
-                    )
-                return (Message('spike_train', spk_train), Message('df_sort', self.df_sort), metrics_msg)
+                # metrics_msg = Message(
+                #         "metrics",
+                #         {
+                #             "processor": self.proc_name,
+                #             "measures": {
+                #                 "time_per_spike": lapsed_time*1000/len(self.df_sort), #in ms
+                #                 'in_queue_size': self.in_queue.qsize()
+                #             },
+                #         },
+                #     )
+                metrics_msg = MetricsMessage(self.proc_name, 
+                                             {
+                                            "time_per_spike": lapsed_time*1000/len(self.df_sort), #in ms
+                                            'in_queue_size': self.in_queue.qsize()
+                                            } )
+                
+                return (SpikeTrainMessage(spk_train), SortedSpikeMessage(self.df_sort), metrics_msg)
             else:
-                (Message('spike_train', spk_train), Message('df_sort', self.df_sort))
+                (SpikeTrainMessage(spk_train), SortedSpikeMessage(self.df_sort))
 
+
+class SpikeTrainMessage(Message):
+    """Message that contains the binned spike train
+    """
+    type = 'spike_train'
+
+    def __init__(self, spk_train:np.ndarray):
+        
+        if isinstance(spk_train, np.ndarray):
+            self.data = spk_train
+        else:
+            raise TypeError("The input should be a numpy array")
+        
+        self.timestamp = time.time()
+
+class SortedSpikeMessage(Message):
+    type = 'df_sort'
+    
+    def __init__(self, sorted_dataframe:pd.DataFrame):
+        
+        if isinstance(sorted_dataframe, pd.DataFrame):
+            self.data = pd.DataFrame
+        else:
+            raise TypeError('The input should be a pandas dataframe')
+        
+        self.timestamp = time.time()
 
 
 if __name__ == '__main__':
