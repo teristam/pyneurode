@@ -24,15 +24,13 @@ class Spike2ArduinoProcessor(Processor):
         self.delay = delay
     
     def process(self, message: SpikeTrainMessage) -> SpikeTrainMessage:
-        if not isinstance(message, SpikeTrainMessage):
-            raise TypeError("Input must be SpikeTrainMessage")
-        
-        spiketrain = message.data
-        if sum(spiketrain[self.neuron_idx,:]) > 0:
-            # treat it as a single event for now
-            return (ArduinoMessage(self.digital_port, True), 
-                    ArduinoWaitMessage(self.delay), 
-                    ArduinoMessage(self.digital_port, False))
+        if isinstance(message, SpikeTrainMessage):
+            spiketrain = message.data
+            if sum(spiketrain[self.neuron_idx,:]) > 0:
+                # treat it as a single event for now
+                return (ArduinoMessage(self.digital_port, True), 
+                        ArduinoWaitMessage(self.delay), 
+                        ArduinoMessage(self.digital_port, False))
 
 if __name__ == '__main__':
     
@@ -51,7 +49,7 @@ if __name__ == '__main__':
         
         
         msgTimeSource = MsgTimeSource(1, [spike_msg1, spike_msg2, spike_msg3, spike_msg4] )
-        spike2arduino = Spike2ArduinoProcessor(2, 13, 0.1)
+        spike2arduino = Spike2ArduinoProcessor(1, 13, 0.005)
         arduinoSink = ArduinoSink("COM4")
         
         msgTimeSource.connect(spike2arduino)
