@@ -150,8 +150,8 @@ class SpikeClusterVisualizer(Visualizer):
         # get the theme for a specific cluster_id
 
         # first get all the clusters in the same tetrode
-        tetrode = cluster2plot%100 
-        cur_tetrode_cluster = [c for c in self.cluster_list if c%100==tetrode] #find the cluster id for current tetrode
+        tetrode = cluster2plot//100 
+        cur_tetrode_cluster = [c for c in self.cluster_list if c//100==tetrode] #find the cluster id for current tetrode
         
         # find the proper index in the theme
         idx = cur_tetrode_cluster.index(cluster2plot)
@@ -159,8 +159,8 @@ class SpikeClusterVisualizer(Visualizer):
 
     def drawPCA(self):
         cluster2plot = dpg.get_value(self.list_box) #will return a string
-        tetrode = int(cluster2plot)%100 # cluster id is in the form 201, 202 etc, where n%100 is the channel
-        cur_tetrode_cluster = [c for c in self.cluster_list if c%100==tetrode] #find the cluster id for current tetrode
+        tetrode = int(cluster2plot)//100 # cluster id is in the form 201, 202 etc, where n%100 is the channel
+        cur_tetrode_cluster = [c for c in self.cluster_list if c//100==tetrode] #find the cluster id for current tetrode
 
         for i,cid in enumerate(cur_tetrode_cluster):
             df_sel = self.df_sort[self.df_sort.cluster_id == cid]
