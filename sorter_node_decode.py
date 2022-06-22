@@ -37,12 +37,12 @@ if  __name__ == '__main__':
         # reading too fast may overflow the pipe
         # fileReader = FileReaderSource('../pyneurode_study/data/data_packets_M2_D23.pkl',interval=0.05)
         zmqSource = ZmqSource(adc_channel=20)
-        spikeSortProcessor = SpikeSortProcessor(interval=0.01, min_num_spikes=1000)
+        spikeSortProcessor = SpikeSortProcessor(interval=0.01, min_num_spikes=2000)
         syncDataProcessor = SyncDataProcessor(interval=0.02)
         gui = GUIProcessor()
         animal_name = input('Please enter the designation of the animal: ')
         filesave = FileEchoSink(f'data/{animal_name}_{datetime.now().strftime("%Y%m%d_%H%M%S")}_df_sort_.pkl')
-        spike2arduino = Spike2ArduinoProcessor(1, 13, 0.005)
+        spike2arduino = Spike2ArduinoProcessor([0,1,2], [13,12,11], 0.002)
         arduinoSink = ArduinoSink("COM4")
 
         zmqSource.connect(spikeSortProcessor, filters='spike')
@@ -58,8 +58,8 @@ if  __name__ == '__main__':
 
 
         analog_visualizer = AnalogVisualizer('Synchronized signals',scale=20, buffer_length=1000)
-        pos_visualizer = AnalogVisualizer('pos', buffer_length=1000)
-        cluster_vis = SpikeClusterVisualizer('cluster_vis')
+        pos_visualizer = AnalogVisualizer('pos', buffer_length=2000)
+        cluster_vis = SpikeClusterVisualizer('cluster_vis', max_spikes=200)
         latency_vis = LatencyVisualizer('latency')
 
 
