@@ -14,6 +14,7 @@ from pyneurode.processor_node.SpikeClusterVisualizer import SpikeClusterVisualiz
 from pyneurode.processor_node.LatencyVisualizer import LatencyVisualizer
 from pyneurode.processor_node.ZmqSource import ZmqSource
 import time 
+from datetime import datetime
 
 '''
 GUI design architecture:
@@ -40,7 +41,7 @@ if  __name__ == '__main__':
         syncDataProcessor = SyncDataProcessor(interval=0.02)
         gui = GUIProcessor()
         animal_name = input('Please enter the designation of the animal: ')
-        filesave = FileEchoSink(f'data/{animal_name}_{int(time.time())}_df_sort_.pkl')
+        filesave = FileEchoSink(f'data/{animal_name}_{datetime.now().strftime("%Y%m%d_%H%M%S")}_df_sort_.pkl')
         spike2arduino = Spike2ArduinoProcessor(1, 13, 0.005)
         arduinoSink = ArduinoSink("COM4")
 
