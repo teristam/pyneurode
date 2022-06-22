@@ -10,7 +10,7 @@ class Spike2ArduinoProcessor(Processor):
     """Convert the spike of a neuron to AdruinoMessage so that it can be used to trigger external device
     """
     
-    def __init__(self, neuron_idx, digital_port, delay=0.001):
+    def __init__(self, neuron_idx:list, digital_port:list, delay=0.001):
         super().__init__()
         
         """Constructor
@@ -26,11 +26,22 @@ class Spike2ArduinoProcessor(Processor):
     def process(self, message: SpikeTrainMessage) -> SpikeTrainMessage:
         if isinstance(message, SpikeTrainMessage):
             spiketrain = message.data
-            if sum(spiketrain[self.neuron_idx,:]) > 0:
-                # treat it as a single event for now
-                return (ArduinoMessage(self.digital_port, True), 
-                        ArduinoWaitMessage(self.delay), 
-                        ArduinoMessage(self.digital_port, False))
+            msg_list = []
+
+            for i,idx in enumerate(self.neuron_idx):
+                if idx <= spiketrain.shape[0]: # do some safety check to make sure index is valid
+                    if sum(spiketrain[idx,:]) > 0:
+                        # Set true to all spiking output
+                        msg_list += [ArduinoMessage(self.digital_port[i], True)]
+                    
+            ArduinoWaitMessage(self.delay), 
+            
+            # reset the pulses
+            for i in range(len(self.digital_port)):
+                msg_list += [ArduinoMessage(self.digital_port[i], False)]
+            
+            # print(msg_list)
+            return msg_list
 
 if __name__ == '__main__':
     
@@ -39,17 +50,17 @@ if __name__ == '__main__':
     
     spike_msg1 = SpikeTrainMessage(np.array([[0,1,0,0]]).T)
     print(spike_msg1.data.shape)
-    spike_msg2 = SpikeTrainMessage(np.array([[0,1,1,0]]).T)
+    spike_msg2 = SpikeTrainMessage(np.array([[0,0,1,0]]).T)
     spike_msg3 = SpikeTrainMessage(np.array([[0,1,0,0]]).T)
-    spike_msg4 = SpikeTrainMessage(np.array([[0,1,1,0]]).T)
+    spike_msg4 = SpikeTrainMessage(np.array([[0,0,1,0]]).T)
 
 
     
     with ProcessorContext() as ctx:
         
         
-        msgTimeSource = MsgTimeSource(1, [spike_msg1, spike_msg2, spike_msg3, spike_msg4] )
-        spike2arduino = Spike2ArduinoProcessor(1, 13, 0.005)
+        msgTimeSource = MsgTimeSource(0.0001, [spike_msg1, spike_msg2, spike_msg3, spike_msg4] )
+        spike2arduino = Spike2ArduinoProcessor([1,2,6],[13,12,11], 0.002)
         arduinoSink = ArduinoSink("COM4")
         
         msgTimeSource.connect(spike2arduino)
