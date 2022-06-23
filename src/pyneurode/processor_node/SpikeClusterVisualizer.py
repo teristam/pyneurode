@@ -4,9 +4,10 @@ import dearpygui.dearpygui as dpg
 import numpy as np
 import pandas as pd
 from sklearn import cluster
+from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from pyneurode.processor_node.Message import Message
 from .Visualizer import Visualizer
-
+import time
 
 
 def getClusterColor(i:int,alpha=200):
@@ -25,7 +26,7 @@ def getClusterColor(i:int,alpha=200):
 class SpikeClusterVisualizer(Visualizer):
 
 
-    def __init__(self, name, num_channel=4, max_spikes = 500) -> None:
+    def __init__(self, name, num_channel=4, max_spikes = 500, max_plot_per_cluster=80) -> None:
         super().__init__(name)
         self.num_channel = num_channel
         self.channel_plot = []
@@ -34,7 +35,9 @@ class SpikeClusterVisualizer(Visualizer):
         self.cluster_list = set()
         self.df_sort = pd.DataFrame() #only keep a fixed number of spikes
         self.max_spike = max_spikes
+        self.max_plot_per_cluster = max_plot_per_cluster
         self.plot_need_refit = True # whether it is the first time the plots are shown
+        
 
     def init_gui(self):
         
@@ -90,12 +93,6 @@ class SpikeClusterVisualizer(Visualizer):
 
             self.init_theme()
 
-            # dpg.add_value('waveform plot latency', '-')
-            # dpg.add_value('collected sorting result latency', '-')
-            # dpg.add_text('Waveform latency:')
-            # dpg.add_text('waveform latency')
-            # dpg.add_text('Collect sorting result latency:')
-            # dpg.add_text('pc latency')
     
     def auto_fit_plots(self):
         for ax,ay in self.channel_plot_axes:
@@ -138,9 +135,8 @@ class SpikeClusterVisualizer(Visualizer):
             spike_waveforms = df_sel.spike_waveform_aligned.values
             xdata = np.arange(len(spike_waveforms[0])//self.num_channel).tolist()
             spike_length = len(spike_waveforms[0])//self.num_channel
-            # print(spike_waveforms[0].shape, print(len(spike_waveforms)))
-
-            for i in range(len(spike_waveforms)):
+            
+            for i in range(min(len(spike_waveforms),self.max_plot_per_cluster)): # limit the amount of waveform to plot
                 for j in range(self.num_channel):
                     ydata = spike_waveforms[i][j*spike_length:(j+1)*spike_length].tolist()
                     series = dpg.add_line_series(xdata, ydata, parent=self.channel_plot_axes[j][1])
@@ -178,23 +174,31 @@ class SpikeClusterVisualizer(Visualizer):
 
 
     def update(self, messages: List[Message]):
+        start = time.time()
         # clear the plot
         for ax,ay in self.channel_plot_axes:
             dpg.delete_item(ay, children_only=True)
 
         dpg.delete_item(self.pca_axes[1], children_only=True)
 
+        # Note: when there are lots of message, this part will be super slow, may make more sense to discard some of the data
+        # since it is only for visualization
+
+         
         for msg in messages:
             # only keep a certain number of spikes
             #TODO ideally a separate queue for each cluster, probably using dequeue after df.to_dict()?
             df = msg.data
-            # print('df is ', len(df))
-            # self.df_sort = pd.concat([self.df_sort, df], ignore_index=True)
-            self.df_sort = self.df_sort.append(df, ignore_index=True)
-            if len(self.df_sort) > self.max_spike:
-                self.df_sort = self.df_sort[-self.max_spike:-1]
+            
+            # avoid appending large dataframe
+            if len(df) > self.max_spike:
+                # too many
+                self.df_sort = df[-self.max_spike:-1]
+            else:
+                # combine the correct portion
+                leftover_length = self.max_spike - len(self.df_sort)
+                self.df_sort = pd.concat([self.df_sort[-leftover_length:], df], ignore_index=True)
 
-            # print(df.pc_norm)
 
             if len(self.df_sort)>0:
                 #update the cluster id
@@ -213,4 +217,10 @@ class SpikeClusterVisualizer(Visualizer):
                     if dpg.get_value(self.checkbox_autofit):
                         self.auto_fit_plots()
                     self.plot_need_refit = False
-       
+
+        
+        lapsed = time.time()-start
+        if lapsed > 0.1:
+            print(f'warning: spike cluster udpate time: {lapsed}')
+            print(f'mesage queue in spike visulizer: {len(messages)}')
+            print(f'Total row: {sum([len(m.data) for m in messages])}')
