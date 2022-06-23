@@ -406,7 +406,10 @@ class FileEchoSource(TimeSource):
                         raise TypeError(f'Datatype {type(msg)} is not supported')
                 except EOFError:
                     break
-        self.log(logging.DEBUG, 'Finishing loading data')
+        else:
+            raise ValueError("The filetype is not supported")
+                
+        self.log(logging.DEBUG, f'Finishing loading data. Totaly message count: {len(self.data)} ')
 
     def process(self):
 
@@ -414,6 +417,7 @@ class FileEchoSource(TimeSource):
             self.log(logging.DEBUG, f'Finish sending {self.data_counter} messages')
 
         if self.filetype == 'message':
+            # return a batch of messages at once for performance
             if self.data_counter + self.batch_size > len(self.data):
                 self.data_counter = 0 # restart
 
@@ -425,6 +429,8 @@ class FileEchoSource(TimeSource):
                 if m.type == 'spike':
                     m.data.acq_timestamp = utils.perf_counter()
 
+            if self.verbose:
+                self.log(logging.DEBUG, msg)
             return msg
         elif self.filetype == 'list':
             assert self.data is not None, 'Not able to load data'
