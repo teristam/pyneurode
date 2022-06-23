@@ -47,7 +47,7 @@ class ArduinoTriggerMessage(Message):
     type = 'arduino_trigger'
     
     def __init__(self, digital_ports:list):   
-        self.data = ' '.join([str(p) for p in digital_ports])
+        self.data = ' '.join([str(p) for p in digital_ports])+'\n'
         self.timestamp = time.time()
         
         
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     with ProcessorContext() as ctx:
         
         
-        msgTimeSource = MsgTimeSource(0.5, [msg] )
+        msgTimeSource = MsgTimeSource(0.001, [msg] )
         arduinoSink = ArduinoTriggerSink("COM5")
         
         msgTimeSource.connect(arduinoSink)
