@@ -38,7 +38,7 @@ class ArduinoTriggerSink(Sink):
         """
     
         if isinstance(message, ArduinoTriggerMessage):
-            self.log(logging.DEBUG, message)
+            # self.log(logging.DEBUG, message)
             self.serial.write(bytes(message.data.encode()))
             self.serial.readline() # don't overflow the serial port, wait for acknowledge first
 
