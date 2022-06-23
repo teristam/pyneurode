@@ -19,6 +19,7 @@ class Spike2ArduinoProcessor(Processor):
             neuron_idx (_type_): index of the neuron in the spike train to use as trigger
             delay (float, optional): delay bettween the on and off of the TTL pulse in second. Defaults to 0.001.
         """
+        assert len(neuron_idx) == len(digital_port), "The number of neuron and digital port must be the same"
         self.neuron_idx = neuron_idx
         self.digital_port = digital_port
         self.delay = delay
@@ -29,7 +30,7 @@ class Spike2ArduinoProcessor(Processor):
             msg_list = []
 
             for i,idx in enumerate(self.neuron_idx):
-                if idx <= spiketrain.shape[0]: # do some safety check to make sure index is valid
+                if idx < spiketrain.shape[0]: # do some safety check to make sure index is valid
                     if sum(spiketrain[idx,:]) > 0:
                         # Set true to all spiking output
                         msg_list += [ArduinoMessage(self.digital_port[i], True)]
@@ -60,7 +61,7 @@ if __name__ == '__main__':
         
         
         msgTimeSource = MsgTimeSource(0.0001, [spike_msg1, spike_msg2, spike_msg3, spike_msg4] )
-        spike2arduino = Spike2ArduinoProcessor([1,2,6],[13,12,11], 0.002)
+        spike2arduino = Spike2ArduinoProcessor([1,2,6,1,2,2,1],[13,12,11,10,9,8,7], 0.002)
         arduinoSink = ArduinoSink("COM4")
         
         msgTimeSource.connect(spike2arduino)
