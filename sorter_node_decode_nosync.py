@@ -36,7 +36,7 @@ if  __name__ == '__main__':
 
         # reading too fast may overflow the pipe
         # fileReader = FileReaderSource('../pyneurode_study/data/data_packets_M2_D23.pkl',interval=0.05)
-        zmqSource = ZmqSource(adc_channel=20)
+        zmqSource = ZmqSource(adc_channel=20,time_bin = 0.01)
         spikeSortProcessor = SpikeSortProcessor(interval=0.002, min_num_spikes=2000,time_bin=0.01)
         syncDataProcessor = SyncDataProcessor(interval=0.02)
         gui = GUIProcessor()
@@ -60,8 +60,8 @@ if  __name__ == '__main__':
         spikeSortProcessor.connect(gui, ['df_sort','metrics'])
 
 
-        analog_visualizer = AnalogVisualizer('Synchronized signals',scale=20, buffer_length=1000)
-        pos_visualizer = AnalogVisualizer('pos', buffer_length=2000)
+        analog_visualizer = AnalogVisualizer('Synchronized signals',scale=20, buffer_length=6000)
+        pos_visualizer = AnalogVisualizer('pos', buffer_length=6000)
         cluster_vis = SpikeClusterVisualizer('cluster_vis', max_spikes=200)
         latency_vis = LatencyVisualizer('latency')
 
