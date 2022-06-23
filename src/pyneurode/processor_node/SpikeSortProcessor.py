@@ -46,7 +46,6 @@ class SpikeSortProcessor(BatchProcessor):
         self.df_sort_residue = None
         self.time_bin_start = 0
         self.Fs = 30000
-        self.time_bin  = 0.1 #TODO: need to have a setting file to synchronize this time bin between spike and ADC data
         self.start_timestamp  = 0 # TODO: need to record this somewhere
         self.df_sort_list = []
         self.buffer_is_valid = False
@@ -65,11 +64,12 @@ class SpikeSortProcessor(BatchProcessor):
     def run(self):
         return super().run()
 
-    def __init__(self, interval=None, internal_buffer_size=1000, min_num_spikes=2000, do_pca=True):
+    def __init__(self, interval=None, internal_buffer_size=1000, min_num_spikes=2000, do_pca=True, time_bin=0.1):
         super().__init__(interval=interval, internal_buffer_size=internal_buffer_size)
         self.MIN_NUM_SPIKE = min_num_spikes
         self.do_pca = do_pca
-
+        self.time_bin = time_bin  #TODO: need to have a setting file to synchronize this time bin between spike and ADC data
+ 
     def process(self, msgs):
         # each time, it will load multiple message
         # each message may  contain multiple spikesEvent
@@ -209,7 +209,8 @@ class SpikeSortProcessor(BatchProcessor):
                 metrics_msg = MetricsMessage(self.proc_name, 
                                              {
                                             "time_per_spike": lapsed_time*1000/len(self.df_sort), #in ms
-                                            'in_queue_size': self.in_queue.qsize()
+                                            'in_queue_size': self.in_queue.qsize(),
+                                            'df_sort_size': len(self.df_sort)
                                             } )
                 
                 return (SpikeTrainMessage(spk_train), SortedSpikeMessage(self.df_sort), metrics_msg)
