@@ -37,15 +37,18 @@ if  __name__ == '__main__':
         # reading too fast may overflow the pipe
         # fileReader = FileReaderSource('../pyneurode_study/data/data_packets_M2_D23.pkl',interval=0.05)
         zmqSource = ZmqSource(adc_channel=20)
-        spikeSortProcessor = SpikeSortProcessor(interval=0.01, min_num_spikes=2000)
+        spikeSortProcessor = SpikeSortProcessor(interval=0.002, min_num_spikes=2000)
         syncDataProcessor = SyncDataProcessor(interval=0.02)
         gui = GUIProcessor()
         animal_name = input('Please enter the designation of the animal: ')
-        filesave = FileEchoSink(f'data/{animal_name}_{datetime.now().strftime("%Y%m%d_%H%M%S")}_df_sort_.pkl')
-        spike2arduino = Spike2ArduinoProcessor([0,1,2], [13,12,11], 0.002)
+        now = datetime.now()
+        filesave = FileEchoSink(f'data/{animal_name}_{now.strftime("%Y%m%d_%H%M%S")}_df_sort_.pkl')
+        packet_save = FileEchoSink(f'data/{animal_name}_{now.strftime("%Y%m%d_%H%M%S")}_packets.pkl')
+        spike2arduino = Spike2ArduinoProcessor([0,1,2,3,4,5], [13,12,11,10,9,8], 0.002)
         arduinoSink = ArduinoSink("COM4")
 
         zmqSource.connect(spikeSortProcessor, filters='spike')
+        zmqSource.connect(packet_save)
         spikeSortProcessor.connect(syncDataProcessor)
         spikeSortProcessor.connect(spike2arduino)
         spike2arduino.connect(arduinoSink)
@@ -68,6 +71,6 @@ if  __name__ == '__main__':
         gui.register_visualizer(cluster_vis, filters=['df_sort'])
         gui.register_visualizer(latency_vis, filters=['metrics'])
 
-        ctx.register_processors(zmqSource, spikeSortProcessor, syncDataProcessor, gui, filesave, arduinoSink, spike2arduino)
+        ctx.register_processors(zmqSource, spikeSortProcessor, syncDataProcessor, gui, filesave, arduinoSink, spike2arduino, packet_save)
         
         ctx.start()
