@@ -50,7 +50,7 @@ class SpikeSortProcessor(BatchProcessor):
         self.df_sort_list = []
         self.buffer_is_valid = False
         self.spike_train_buffer = None
-        self.spiketrain_buffer_length = 5000
+        self.spiketrain_buffer_length = 10000
         self.spike_print_counter = 0
         self.sorted_idx_prev = 0
         self.template_electrode_id = None
@@ -193,7 +193,7 @@ class SpikeSortProcessor(BatchProcessor):
 
             # self.log(logging.DEBUG, f'Sending {spk_train.shape}')
 
-
+            # print(spk_train.shape)
             # also calculate the time to sort each spikes in ms
             if len(self.df_sort)>0:
                 # metrics_msg = Message(
