@@ -39,7 +39,11 @@ class AnalogVisualizer(Visualizer):
             self.buffer = RingBuffer((self.buffer_length, messages[0].data.shape[1]))
         
         for m in messages:
-            self.buffer.write(m.data)
+            if m.data.shape[0] > self.buffer.length:
+                #if the input data is too large, resize the data buffer
+                self.buffer = RingBuffer((m.data.shape[0]*2, m.data.shape[1]))
+            else:
+                self.buffer.write(m.data)
 
         ####
         # update the plot
