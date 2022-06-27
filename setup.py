@@ -46,6 +46,8 @@ setup(
         'tqdm',
         'pytest',
         'sphinx_rtd_theme',
+        'pyfirmata',
+        'pyserial',
         'isosplit5 @ git+https://github.com/magland/isosplit5_python'
     ],
     zip_safe=False

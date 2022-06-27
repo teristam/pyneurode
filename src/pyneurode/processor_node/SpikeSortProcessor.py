@@ -13,6 +13,8 @@ from pyneurode.processor_node.ProcessorContext import ProcessorContext
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from pyneurode.spike_sorter import *
 from pyneurode.spike_sorter_cy import template_match_all_electrodes_cy
+from pyneurode.processor_node.Message import Message, MetricsMessage
+
 import pyneurode.utils
 import warnings
 
@@ -44,7 +46,6 @@ class SpikeSortProcessor(BatchProcessor):
         self.df_sort_residue = None
         self.time_bin_start = 0
         self.Fs = 30000
-        self.time_bin  = 0.1 #TODO: need to have a setting file to synchronize this time bin between spike and ADC data
         self.start_timestamp  = 0 # TODO: need to record this somewhere
         self.df_sort_list = []
         self.buffer_is_valid = False
@@ -63,11 +64,12 @@ class SpikeSortProcessor(BatchProcessor):
     def run(self):
         return super().run()
 
-    def __init__(self, interval=None, internal_buffer_size=1000, min_num_spikes=2000, do_pca=True):
+    def __init__(self, interval=None, internal_buffer_size=1000, min_num_spikes=2000, do_pca=True, time_bin=0.1):
         super().__init__(interval=interval, internal_buffer_size=internal_buffer_size)
         self.MIN_NUM_SPIKE = min_num_spikes
         self.do_pca = do_pca
-
+        self.time_bin = time_bin  #TODO: need to have a setting file to synchronize this time bin between spike and ADC data
+ 
     def process(self, msgs):
         # each time, it will load multiple message
         # each message may  contain multiple spikesEvent
@@ -108,6 +110,7 @@ class SpikeSortProcessor(BatchProcessor):
             self.standard_scalers = standard_scalers
 
             (self.templates, self.template_cluster_id, self.template_electrode_id) = generate_spike_templates(df)
+            print(self.template_cluster_id)
 
             # Some book keeping
             self.spike_len_prev = len(self.spike_data) # update previous spike data len
@@ -137,6 +140,8 @@ class SpikeSortProcessor(BatchProcessor):
             else:
                 self.df_sort = template_match_all_electrodes_cy(self.df_sort, self.templates, 
                         self.template_electrode_id, self.template_cluster_id)
+                
+            # print(self.df_sort.cluster_id)
 
             # print(f'Template matching of {len(df_sort)} spikes takes {time.time()-start_time:.3f}')
 
@@ -191,20 +196,54 @@ class SpikeSortProcessor(BatchProcessor):
 
             # also calculate the time to sort each spikes in ms
             if len(self.df_sort)>0:
-                metrics_msg = Message(
-                        "metrics",
-                        {
-                            "processor": self.proc_name,
-                            "measures": {
-                                "time_per_spike": lapsed_time*1000/len(self.df_sort), #in ms
-                                'in_queue_size': self.in_queue.qsize()
-                            },
-                        },
-                    )
-                return (Message('spike_train', spk_train), Message('df_sort', self.df_sort), metrics_msg)
+                # metrics_msg = Message(
+                #         "metrics",
+                #         {
+                #             "processor": self.proc_name,
+                #             "measures": {
+                #                 "time_per_spike": lapsed_time*1000/len(self.df_sort), #in ms
+                #                 'in_queue_size': self.in_queue.qsize()
+                #             },
+                #         },
+                #     )
+                metrics_msg = MetricsMessage(self.proc_name, 
+                                             {
+                                            "time_per_spike": lapsed_time*1000/len(self.df_sort), #in ms
+                                            'in_queue_size': self.in_queue.qsize(),
+                                            'df_sort_size': len(self.df_sort)
+                                            } )
+                
+                return (SpikeTrainMessage(spk_train), SortedSpikeMessage(self.df_sort), metrics_msg)
             else:
-                (Message('spike_train', spk_train), Message('df_sort', self.df_sort))
+                (SpikeTrainMessage(spk_train), SortedSpikeMessage(self.df_sort))
 
+
+class SpikeTrainMessage(Message):
+    """Message that contains the binned spike train
+    spiketrain is in the format (neuron x time)
+    """
+    type = 'spike_train'
+
+    def __init__(self, spk_train:np.ndarray):
+        
+        if isinstance(spk_train, np.ndarray):
+            self.data = spk_train
+        else:
+            raise TypeError("The input should be a numpy array")
+        
+        self.timestamp = time.time()
+
+class SortedSpikeMessage(Message):
+    type = 'df_sort'
+    
+    def __init__(self, sorted_dataframe:pd.DataFrame):
+        
+        if isinstance(sorted_dataframe, pd.DataFrame):
+            self.data = sorted_dataframe
+        else:
+            raise TypeError('The input should be a pandas dataframe')
+        
+        self.timestamp = time.time()
 
 
 if __name__ == '__main__':

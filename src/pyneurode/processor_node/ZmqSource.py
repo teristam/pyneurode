@@ -11,7 +11,7 @@ class ZmqSource(Source):
     '''
     Read data from ZMQlink
     '''
-    def __init__(self, adc_channel =20, Fs = 30000, time_bin = 0.1, data_dump_fn = None):
+    def __init__(self, adc_channel =20, Fs = 30000, time_bin = 0.01, data_dump_fn = None):
         super().__init__()
         self.data_dump_fn = data_dump_fn
         self.adc_channel = adc_channel

@@ -1,6 +1,7 @@
 from __future__ import annotations # for postponed evaluation
 from multiprocessing import Event
-from pyneurode.processor_node.Processor import Processor, Message
+from pyneurode.processor_node.Processor import ProcessError
+from pyneurode.processor_node.Message import Message
 from .BatchProcessor import BatchProcessor
 import dearpygui.dearpygui as dpg
 import logging
@@ -17,13 +18,13 @@ class GUIProcessor(BatchProcessor):
     .. note:: its process() function will be called frequently. Avoid doing time consuming processing there.
     """
 
-    def __init__(self, internal_buffer_size=1000):
+    def __init__(self, internal_buffer_size=1000, frame_rate=60):
         """
 
         Args:
             internal_buffer_size (int, optional): size of the internal buffer to hold messages before they are displayed. Defaults to 1000.
         """
-        super().__init__(interval=1/60, internal_buffer_size=internal_buffer_size)
+        super().__init__(interval=1/frame_rate, internal_buffer_size=internal_buffer_size)
         self.visualizers:Dict(List(Visualizer)) = {}
 
     def startup(self):

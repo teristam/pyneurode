@@ -7,16 +7,20 @@ import pickle
 import time
 import logging
 import numpy as np 
+from pyneurode.processor_node.Message import Message
 from pyneurode.spike_sorter import simpleDownSample
 ADC_CHANNEL = 20
+
 
 
 class FileReaderSource(TimeSource):
     '''
     Read from data from a file. It will read data in a batch and send them out
     '''
-    def __init__(self, filename, interval=0, batch_size=10, 
-                random_batch=False, filter=None, adc_channel=ADC_CHANNEL, Fs = 30000, time_bin = 0.1):
+    def __init__(self, filename:str, interval:float=0, batch_size:int=10, 
+                random_batch:bool=False, filter:list=None, adc_channel:int=ADC_CHANNEL, Fs:int = 30000, time_bin:float = 0.1):
+
+
 
         super().__init__(interval)
         self.filename = filename

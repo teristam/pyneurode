@@ -4,7 +4,7 @@ import numpy as np
 from pyneurode.spike_sorter import *
 
 from pyneurode.processor_node.FileReaderSource import *
-from pyneurode.processor_node.Processor import Message
+from pyneurode.processor_node.Message import Message
 
 ADC_CHANNEL = 20
 

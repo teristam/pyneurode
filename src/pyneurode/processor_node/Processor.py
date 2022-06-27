@@ -1,6 +1,8 @@
 from __future__ import annotations # for postponed evaluation
 import functools
 import logging
+
+from pyneurode.processor_node.Message import Message
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
 import os
 import pickle
@@ -31,23 +33,6 @@ def logger(name, level, msg, exc_info=None):
     myLogger.log(level, f'\t{minute}:{seconds:.2f} {name:15} \t\t {msg}', exc_info=exc_info)
 
 
-@dataclass
-class Message:
-    '''
-    Simple dataclass that transfer data between Processors
-    #TODO: use a different class/type for each type of messages, need a better system to handle
-    # the enum
-    '''
-    type: str
-    data: Any
-    timestamp: float = None
-
-    def __repr__(self) -> str:
-
-        if isinstance(self.data, np.ndarray):
-            return f'Message (type: {self.type}, data shape: {self.data.shape}, timestamp: {self.timestamp})'
-        else:
-            return f'Message (type: {self.type}, data: {self.data}, timestamp: {self.timestamp})'
 
 
 class Channel:
@@ -138,7 +123,7 @@ class Processor:
         # if no output_name is specified, then output to all
         # self.log(logging.DEBUG, f'Sending {data}')
 
-        if data is not None and not type(data) in [Message, list, tuple]:
+        if data is not None and not isinstance(data,Message) and not type(data) in [list, tuple]:
             raise TypeError(f'Data to be sent must be wrapped as a Message object: {data}')
 
         if data is not None:
@@ -328,9 +313,15 @@ class DummyTimeSource(TimeSource):
         self.log(logging.DEBUG, f'Producing msg {self.msg}')
         return Message('dummy',self.msg)
 
-class RandomMsgTimeSource(TimeSource):
-    # Reply the supplied message 
-    def __init__(self, interval, messages:List[Message]):
+class MsgTimeSource(TimeSource):
+    # Reply the supplied message in sequence
+    def __init__(self, interval:float, messages:List[Message]):
+        """Construct a Time source that send message sequentially at fixed interval
+
+        Args:
+            interval (float): interval in second
+            messages (List[Message]): list of message to send
+        """
         super().__init__(interval)
         self.msg_list = messages
         self.msg_counter = 0
@@ -340,7 +331,8 @@ class RandomMsgTimeSource(TimeSource):
         # self.log(logging.DEBUG, f'Producing msg {msg}')
         self.msg_counter += 1
         return msg
-
+    
+    
 class AddProcessor(Processor):
     def process(self, msg):
         return Message('dummy',msg.data + 100)
@@ -414,7 +406,10 @@ class FileEchoSource(TimeSource):
                         raise TypeError(f'Datatype {type(msg)} is not supported')
                 except EOFError:
                     break
-        self.log(logging.DEBUG, 'Finishing loading data')
+        else:
+            raise ValueError("The filetype is not supported")
+                
+        self.log(logging.DEBUG, f'Finishing loading data. Totaly message count: {len(self.data)} ')
 
     def process(self):
 
@@ -422,6 +417,7 @@ class FileEchoSource(TimeSource):
             self.log(logging.DEBUG, f'Finish sending {self.data_counter} messages')
 
         if self.filetype == 'message':
+            # return a batch of messages at once for performance
             if self.data_counter + self.batch_size > len(self.data):
                 self.data_counter = 0 # restart
 
@@ -433,6 +429,8 @@ class FileEchoSource(TimeSource):
                 if m.type == 'spike':
                     m.data.acq_timestamp = utils.perf_counter()
 
+            if self.verbose:
+                self.log(logging.DEBUG, msg)
             return msg
         elif self.filetype == 'list':
             assert self.data is not None, 'Not able to load data'

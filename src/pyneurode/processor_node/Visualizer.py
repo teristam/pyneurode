@@ -5,7 +5,7 @@ It is used to visualize particular messages
 
 from abc import ABC
 import dearpygui.dearpygui as dpg
-from pyneurode.processor_node.Processor import Message
+from pyneurode.processor_node.Message import Message
 import numpy as np
 import shortuuid
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
