@@ -29,19 +29,16 @@ class Spike2ArduinoTriggerProcessor(Processor):
         if isinstance(message, SpikeTrainMessage):
             spiketrain = message.data
 
-            if max(self.neuron_idx) >= spiketrain.shape[0]:
-                self.log(logging.ERROR, "Neuron index is larger than spiketrain size")
-                return 
-                
             if spiketrain.shape[1]<self.max_frame_to_skip:
                 msg_list = []
                 for i in range(spiketrain.shape[1]):
                     #send pulse for every bin in the spiketrain
                     port_list = []
                     for idx, j in enumerate(self.neuron_idx):
-                        if spiketrain[j,i] >0: # check to see if there is any spikes
-                            port_list.append(self.digital_port[idx]) # collect the port to trigger
-                    
+                        if j < spiketrain.shape[0]:
+                            if spiketrain[j,i] >0: # check to see if there is any spikes
+                                port_list.append(self.digital_port[idx]) # collect the port to trigger
+                        
                     if len(port_list)>0:
                         msg_list.append(ArduinoTriggerMessage(port_list))
             
@@ -66,7 +63,7 @@ if __name__ == '__main__':
         
         msgTimeSource = MsgTimeSource(0.001, [spike_msg1, spike_msg2, spike_msg3, spike_msg4] )
         spike2arduino = Spike2ArduinoTriggerProcessor([1],[13])
-        arduinoSink = ArduinoTriggerSink("COM5")
+        arduinoSink = ArduinoTriggerSink("COM4")
         
         msgTimeSource.connect(spike2arduino)
         spike2arduino.connect(arduinoSink)
