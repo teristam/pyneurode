@@ -17,4 +17,6 @@ def test_buffer_expand():
     buffer_content = np.array([[0,1,2,0,1,2,3,4,0], [0,1,2,0,1,2,3,4,0]]).T
     assert np.allclose(buffer.buffer, buffer_content)
     
-    
+    buffer.write(x)
+    buffer_content = np.array([[1,2,3,4,1,2,3,4,0], [1,2,3,4,1,2,3,4,0]]).T
+    assert np.allclose(buffer.buffer, buffer_content)
