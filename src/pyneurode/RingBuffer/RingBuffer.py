@@ -18,7 +18,7 @@ class NotEnoughDataError(Exception):
 class RingBuffer:
     # A ring buffer to hold numpy array
     
-    def __init__(self,shape,dtype=float,dt=1,start_timestamp=0):
+    def __init__(self,shape,dtype=float,dt=1,start_timestamp=0, auto_grow=True):
         #shape is the shape of the ring buffer, as in the shape argument to np.zeros
         # the shape is assume to be time x dimension
         self.length = shape[0]
@@ -35,12 +35,13 @@ class RingBuffer:
         self.dataFile = None
         self.recordingBlockSize = self.length//10 #how many data to write to the disk each time
         self.dtype = dtype
+        self.auto_grow = True #whether to grow the buffer automatically if the input data is larger than the internal buffer length
 
     def set_buffer_size(self,shape,dtype=float,dt=1,start_timestamp = 0):
         # reset the buffer size
         self.buffer = np.zeros(shape,dtype=dtype)
         self.start_timestamp = start_timestamp
-        self.timestamp = np.zeros((self.length,))
+        self.timestamps = np.zeros((self.length,))
         self.dt = dt 
         self.length = shape[0]
         self.absWriteHead = 0 #the absolute write head
@@ -50,6 +51,20 @@ class RingBuffer:
         self.dataFile = None
         self.recordingBlockSize = self.length//10 #how many data to write to the disk each time
         self.dtype = dtype
+
+    
+    def expand_buffer(self, expand_size):
+        # grow the size of the buffer, copy old data to new buffer
+        new_buffer_length = self.length + expand_size
+        new_buffer =  np.zeros((new_buffer_length, self.buffer.shape[1]),dtype=self.dtype)
+        new_buffer[:self.length,:]  = self.buffer # copy the old data int
+        self.buffer = new_buffer
+        
+        new_timestamps = np.zeros((new_buffer_length,))
+        new_timestamps[:self.length] = self.timestamps
+        self.timestamps = new_timestamps
+        
+        self.length = new_buffer_length
 
 
     def writeHead(self):
@@ -65,6 +80,11 @@ class RingBuffer:
             xsLength = xs.shape[0]
             if self.buffer.shape[1:] != xs.shape[1:] :
                 raise ValueError('Shape mismatch')
+            
+        # if the input data is too large, grow the internal buffer
+        if xsLength > self.length and self.auto_grow:
+            self.expand_buffer(xsLength)    
+        
 
         # TODO: may need to so things differently for bytes data
         ts_segment = np.linspace(0, xs.shape[0]*self.dt, xs.shape[0])
