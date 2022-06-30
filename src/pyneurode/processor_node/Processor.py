@@ -347,7 +347,9 @@ class ScaleProcessor(Processor):
         x = message.data*self.a+self.b
         return Message(message.type, x)
 
-class EchoProcessor(Sink):
+class EchoSink(Sink):
+    """ Simply print the message it receives
+    """
     def process(self,data):
         self.log(logging.INFO, f'Printing {data}')
         
