@@ -51,10 +51,14 @@ class SyncDataProcessor(BatchProcessor):
         # Write to internal buffer
         if spike_train is not None:
             if self.spike_buffer is None:
-            # create the a new buffer
+                 # create the a new buffer
                 self.spike_buffer = RingBuffer((self.buffer_length, spike_train.shape[0]))
-                self.spike_buffer.write(spike_train.T) # ringbuffer accept data in time x col format
-            else:
+
+            try:
+                self.spike_buffer.write(spike_train.T)
+            except ValueError:
+                # spike train shape has changed, properly the data is resorted, discard the current content
+                self.spike_buffer = RingBuffer((self.buffer_length, spike_train.shape[0]))
                 self.spike_buffer.write(spike_train.T)
         
         msg_data_types = [d.type for d in data]

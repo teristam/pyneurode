@@ -75,6 +75,7 @@ class TemplateMatchProcessor(BatchProcessor):
                 self.template_electrode_id = m.data['template_electrode_id']
                 self.pca_transformers = m.data['pca_transformer']
                 self.standard_scalers = m.data['standard_scalers']
+                self.buffer_is_valid = False # refresh the buffer
             elif m.type == 'spike':
                 data.append(m.data)
 
