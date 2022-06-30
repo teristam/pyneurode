@@ -70,7 +70,9 @@ class OpenEphysSpikeEvent(object):
         if _d:
             self.__dict__.update(_d) #update object data with spike event content
         # format spike data
-        if _data:
+        if type(_data) is np.ndarray:
+            self.data = _data # no need converstion
+        else:
             n_arr = np.frombuffer(_data, dtype=np.float32)
             n_arr = np.reshape(n_arr, (self.n_channels, self.n_samples))
             self.data = n_arr
