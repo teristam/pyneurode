@@ -28,7 +28,7 @@ class SpikeGeneratorSource(TimeSource):
     """This source generate spikes for testing. The spike train follows a poison distribution
     """
 
-    def __init__(self,neurons:List[List[SimulatedNeuron]], time_step:int = 100, Fs:int=30000, noise_level=2):
+    def __init__(self,neurons:List[List[SimulatedNeuron]], time_step:int = 100, Fs:int=30000, amp_mod_level=0.5):
         super().__init__(1/time_step)
         self.num_electrode = len(neurons)
         self.neurons = neurons
@@ -36,10 +36,13 @@ class SpikeGeneratorSource(TimeSource):
         self.time_step = time_step # how many steps in 1s, that determine the maximum rate a neuron can fire
         self.Fs = Fs
         self.timestamp = 0
-        self.noise_level = noise_level
+        self.amp_mod_level = amp_mod_level
         self.log(logging.INFO, f'I am creating the following neurons: {self.neurons}')
     
-        
+    def add_noise(self, waveform):
+        # add noise to waveform
+        return waveform + np.random.randn(*waveform.shape)
+    
     def process(self):
         # loop through the neurons, and see if a spike needs to generated
         event2send = []
@@ -56,7 +59,7 @@ class SpikeGeneratorSource(TimeSource):
                     
                     # generate spike event
                     # waveform in (num_channel, num_samples)
-                    waveform = neuron.waveform + np.random.randn(*neuron.waveform.shape)*self.noise_level
+                    waveform = self.add_noise(neuron.waveform)
                     spk_evt = OpenEphysSpikeEvent({'n_channels': self.num_electrode, 'n_samples': neuron.waveform.shape[1],
                                                    'electrode_id': i, 'sorted_id': 0, 
                                                    'timestamp': self.timestamp, 'channel': 0, 
