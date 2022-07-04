@@ -1,10 +1,11 @@
 from sklearn import neural_network
 from pyneurode.processor_node.Processor import MsgTimeSource, Processor
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
-from pyneurode.processor_node.SpikeSortProcessor import SpikeTrainMessage
 from pyneurode.processor_node.ArduinoTriggerSink import ArduinoTriggerMessage, ArduinoTriggerSink
 import logging
 import numpy as np
+
+from pyneurode.processor_node.TemplateMatchProcessor import SpikeTrainMessage
 
 class Spike2ArduinoTriggerProcessor(Processor):
     """Convert the spike of a neuron to AdruinoMessage so that it can be used to trigger external device
@@ -26,8 +27,10 @@ class Spike2ArduinoTriggerProcessor(Processor):
         self.max_frame_to_skip = max_frame_to_skip
     
     def process(self, message: SpikeTrainMessage) -> SpikeTrainMessage:
-        if isinstance(message, SpikeTrainMessage):
+        # self.log(logging.INFO, type(message))
+        if type(message) is SpikeTrainMessage:
             spiketrain = message.data
+            # self.log(logging.INFO, f'spike2arduino msg {message}')
 
             if spiketrain.shape[1]<self.max_frame_to_skip:
                 msg_list = []
