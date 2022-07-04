@@ -1,6 +1,7 @@
 from pyneurode.processor_node.ArduinoSink import ArduinoSink
 from pyneurode.processor_node.ArduinoTriggerSink import ArduinoTriggerSink
 from pyneurode.processor_node.GUIProcessor import GUIProcessor
+from pyneurode.processor_node.MountainsortTemplateProcessor import MountainsortTemplateProcessor
 from pyneurode.processor_node.Processor import *
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 from pyneurode.processor_node.FileReaderSource import FileReaderSource
@@ -13,6 +14,7 @@ import dearpygui.dearpygui as dpg
 from pyneurode.processor_node.AnalogVisualizer import *
 from pyneurode.processor_node.SpikeClusterVisualizer import SpikeClusterVisualizer
 from pyneurode.processor_node.LatencyVisualizer import LatencyVisualizer
+from pyneurode.processor_node.TemplateMatchProcessor import TemplateMatchProcessor
 from pyneurode.processor_node.ZmqSource import ZmqSource
 import time 
 from datetime import datetime
@@ -36,10 +38,11 @@ if  __name__ == '__main__':
         #TODO: need some way to query the output type of processor easily
 
         # reading too fast may overflow the pipe
-        # zmqSource = FileEchoSource(interval=0.01, filename='E:/decoder_test_data/M10_2022-06-23_12-43-50_test4/M10_test4_20220623_124341_packets.pkl', 
+        # zmqSource = FileEchoSource(interval=0.05, filename='data/M8_test_20220704_123528_packets.pkl', 
         #                         filetype='message',batch_size=3)
         zmqSource = ZmqSource(adc_channel=20,time_bin = 0.01)
-        spikeSortProcessor = SpikeSortProcessor(interval=0.002, min_num_spikes=2000,time_bin=0.01)
+        templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,min_num_spikes=2000,training_period=None)
+        templateMatchProcessor = TemplateMatchProcessor(interval=0.01,time_bin=0.01)
         syncDataProcessor = SyncDataProcessor(interval=0.02)
         gui = GUIProcessor(internal_buffer_size=5000)
         spike2arduino = Spike2ArduinoTriggerProcessor([0,1,2,3,4,5], [13,12,11,10,9,8])
@@ -51,18 +54,21 @@ if  __name__ == '__main__':
         filesave = FileEchoSink(f'data/{animal_name}_{now.strftime("%Y%m%d_%H%M%S")}_df_sort_.pkl')
         packet_save = FileEchoSink(f'data/{animal_name}_{now.strftime("%Y%m%d_%H%M%S")}_packets.pkl')
 
-        zmqSource.connect(spikeSortProcessor, filters='spike')
+        zmqSource.connect(templateTrainProcessor, filters='spike')
+        zmqSource.connect(templateMatchProcessor, filters='spike')
         zmqSource.connect(packet_save)
 
-        spikeSortProcessor.connect(syncDataProcessor)
-        spikeSortProcessor.connect(spike2arduino)
+        templateTrainProcessor.connect(templateMatchProcessor)
+        templateMatchProcessor.connect(spike2arduino,'spike_train')
+        templateMatchProcessor.connect(syncDataProcessor)
+
         spike2arduino.connect(arduinoSink)
-        spikeSortProcessor.connect(filesave, ['df_sort'])
+        templateMatchProcessor.connect(filesave, ['df_sort'])
         zmqSource.connect(syncDataProcessor, 'adc_data')
 
         zmqSource.connect(gui, 'adc_data')
         syncDataProcessor.connect(gui)
-        spikeSortProcessor.connect(gui, ['df_sort','metrics'])
+        templateMatchProcessor.connect(gui, ['df_sort','metrics'])
 
 
         analog_visualizer = AnalogVisualizer('Synchronized signals',scale=20, buffer_length=6000)
@@ -76,6 +82,7 @@ if  __name__ == '__main__':
         gui.register_visualizer(cluster_vis, filters=['df_sort'])
         gui.register_visualizer(latency_vis, filters=['metrics'])
 
-        ctx.register_processors(zmqSource, spikeSortProcessor, syncDataProcessor, gui, arduinoSink, spike2arduino, packet_save, filesave)
+        ctx.register_processors(zmqSource, templateTrainProcessor,
+         templateMatchProcessor, syncDataProcessor, gui, arduinoSink, spike2arduino, packet_save, filesave)
         
         ctx.start()
