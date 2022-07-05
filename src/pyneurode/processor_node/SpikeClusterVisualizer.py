@@ -1,3 +1,4 @@
+import logging
 from typing import *
 
 import dearpygui.dearpygui as dpg
@@ -37,6 +38,7 @@ class SpikeClusterVisualizer(Visualizer):
         self.max_spike = max_spikes
         self.max_plot_per_cluster = max_plot_per_cluster
         self.plot_need_refit = True # whether it is the first time the plots are shown
+        self.template_update_id = None
         
 
     def init_gui(self):
@@ -44,15 +46,6 @@ class SpikeClusterVisualizer(Visualizer):
         with dpg.window(label='Waveform window', autosize=True):
             window_width = 800
             window_height = window_width//2
-
-
-            # style = {
-            #     'xaxis_no_tick_marks' : True,
-            #     'xaxis_no_tick_labels': True,
-            #     'yaxis_no_tick_marks': True,
-            #     'yaxis_no_tick_labels' : True,
-            #     'no_legend': True,
-            # }
 
             # PCA plot
             with dpg.group(horizontal=True):
@@ -172,6 +165,11 @@ class SpikeClusterVisualizer(Visualizer):
                         # apply theme to the series
                         dpg.bind_item_theme(series, self.get_cluster_theme(cid))
 
+    def clear_display(self):
+        self.log(logging.DEBUG, 'Clearing display')
+        self.df_sort = pd.DataFrame()
+        self.cluster_list = set()
+
 
     def update(self, messages: List[Message]):
         start = time.time()
@@ -189,6 +187,13 @@ class SpikeClusterVisualizer(Visualizer):
             # only keep a certain number of spikes
             #TODO ideally a separate queue for each cluster, probably using dequeue after df.to_dict()?
             df = msg.data
+            
+            # clear current wavefroms if it is using a new template
+            if self.template_update_id is None:
+                self.template_update_id = df.iloc[-1].template_update_id
+            elif not self.template_update_id == df.iloc[-1].template_update_id:
+                self.clear_display()
+                self.template_update_id = df.iloc[-1].template_update_id
             
             # avoid appending large dataframe
             if len(df) > self.max_spike:
