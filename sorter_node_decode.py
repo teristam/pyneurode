@@ -18,6 +18,7 @@ from pyneurode.processor_node.TemplateMatchProcessor import TemplateMatchProcess
 from pyneurode.processor_node.ZmqSource import ZmqSource
 import time 
 from datetime import datetime
+import git
 
 '''
 GUI design architecture:
@@ -32,6 +33,9 @@ have one single GUI node in the main thread where all the others can connect to
 logging.basicConfig(level=logging.INFO)
 
 if  __name__ == '__main__':
+    repo = git.Repo(search_parent_directories=True)
+    sha = repo.head.object.hexsha[:6] #also record down the SHA for later reference.
+
     start  = time.time()
 
     with ProcessorContext() as ctx:
@@ -51,8 +55,8 @@ if  __name__ == '__main__':
 
         animal_name = input('Please enter the designation of the animal: ')
         now = datetime.now()
-        filesave = FileEchoSink(f'data/{animal_name}_{now.strftime("%Y%m%d_%H%M%S")}_df_sort_.pkl')
-        packet_save = FileEchoSink(f'data/{animal_name}_{now.strftime("%Y%m%d_%H%M%S")}_packets.pkl')
+        filesave = FileEchoSink(f'data/{animal_name}_{now.strftime("%Y%m%d_%H%M%S")}_{sha}_df_sort.pkl')
+        packet_save = FileEchoSink(f'data/{animal_name}_{now.strftime("%Y%m%d_%H%M%S")}_{sha}_packets.pkl')
 
         zmqSource.connect(templateTrainProcessor, filters='spike')
         zmqSource.connect(templateMatchProcessor, filters='spike')
