@@ -48,6 +48,7 @@ class TemplateMatchProcessor(BatchProcessor):
         self.template_electrode_id = None
         self.df_sort = None
         self.pca_component = 3
+        self.template_update_id = 0 #indicate which update of the template it is using
 
         # self.collect_spike_thread = threading.Thread(target=collect_spikes, args=(self.in_queue,self.spike_data))
         # self.collect_spike_thread.start()
@@ -76,6 +77,7 @@ class TemplateMatchProcessor(BatchProcessor):
                 self.pca_transformers = m.data['pca_transformer']
                 self.standard_scalers = m.data['standard_scalers']
                 self.buffer_is_valid = False # refresh the buffer
+                self.template_update_id += 1
             elif m.type == 'spike':
                 data.append(m.data)
 
@@ -87,6 +89,7 @@ class TemplateMatchProcessor(BatchProcessor):
             start_time = utils.perf_counter()
             # do template matching
             self.df_sort = makeSpikeDataframe(self.spike_data)
+            self.df_sort['template_update_id'] = self.template_update_id
             self.spike_data.clear()
 
 
