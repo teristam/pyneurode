@@ -4,13 +4,14 @@ It is used to visualize particular messages
 '''
 
 from abc import ABC
+import functools
 import dearpygui.dearpygui as dpg
 from pyneurode.processor_node.Message import Message
 import numpy as np
 import shortuuid
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from typing import List, Union
-
+from pyneurode.processor_node.Processor import logger
 class Visualizer:
     """The base Visualizer class. Intended to be extended by subclasses.
     The UI should be constructed using the `init_gui()` function and updated based on the messages passed to it in the `update()` function.
@@ -28,6 +29,8 @@ class Visualizer:
             name (str): Name of the visualizer, for identification purpose
         """
         self.name = name
+        self.log = functools.partial(logger, self.name)
+
 
     def init_gui(self):
         """Build the GUI using dearpygui here
@@ -50,6 +53,8 @@ class Visualizer:
         """
         # function called to update the figures
         raise NotImplementedError('update must be implemented')
+    
+
 
 
 def shiftSignal4plot(x,shift_scale=10):
