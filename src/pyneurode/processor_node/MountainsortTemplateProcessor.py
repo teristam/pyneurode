@@ -67,6 +67,7 @@ class MountainsortTemplateProcessor(BatchProcessor):
         self.MIN_NUM_SPIKE = min_num_spikes
         self.do_pca = do_pca
         self.training_period = training_period # the period at which the spike template will be recompute, in second
+        self.prev_metrics_time = time.time()
  
     def process(self, msgs):
         # each time, it will load multiple message
@@ -94,7 +95,6 @@ class MountainsortTemplateProcessor(BatchProcessor):
             start_time = time.time()
 
             self.log(logging.DEBUG, 'Computing spike template')
-            # use a background thread to train the template
             spike2sort = self.spike_data.copy() 
 
             df = makeSpikeDataframe(spike2sort)
@@ -122,5 +122,17 @@ class MountainsortTemplateProcessor(BatchProcessor):
             )
             
             return msg
+        else:
+            if (time.time()-self.prev_metrics_time) >=1:
+                # send update every second
+                metrics_msg = MetricsMessage(self.proc_name, 
+                                             {
+                                            "spike_size": len(self.spike_data)
+                                            } )
+                
+                self.prev_metrics_time = time.time()
+                
+                return metrics_msg
+                
 
             
