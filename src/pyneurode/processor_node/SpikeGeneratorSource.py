@@ -12,14 +12,21 @@ from pyneurode.zmq_client import OpenEphysSpikeEvent
 from pyneurode.processor_node.Message import Message
 import logging
 
-@dataclass
 class SimulatedNeuron:
     """
     A class for holding a simulated neurons
     """
-    firing_rate: int
-    waveform: np.ndarray # in (num_channel, num_samples)
-    firing_time: Optional[Tuple[int,int]]=None # a tuple indicating the firing time in sample unit, None will be firing all the time
+    def __init__(self, firing_rate:float, waveform: np.ndarray, firing_time: Optional[Tuple[int,int]]=None) -> None:  
+        self.firing_rate = firing_rate
+        self.waveform = waveform # in (num_channel, number_waveform,  num_samples)
+        self.firing_time = firing_time # a tuple indicating the firing time in sample unit, None will be firing all the time
+        
+    def get_waveform(self):
+        # randomly return a stored waveform
+        amp_mode = np.random.normal(1.01,0.01) # add a small amplitude modulation
+        return self.waveform[:, np.random.randint(0, self.waveform.shape[1]),:]*amp_mode
+        
+        
     
     def __repr__(self):
         return f'SimulatedNeuron (firing_rate: {self.firing_rate}, waveform: {self.waveform.shape}, firing_time: {self.firing_rate}'
@@ -39,27 +46,24 @@ class SpikeGeneratorSource(TimeSource):
         self.amp_mod_level = amp_mod_level
         self.log(logging.INFO, f'I am creating the following neurons: {self.neurons}')
     
-    def add_noise(self, waveform):
-        # add noise to waveform
-        return waveform + np.random.randn(*waveform.shape)
-    
     def process(self):
         # loop through the neurons, and see if a spike needs to generated
         event2send = []
         
         for i in range(self.num_electrode):
             for neuron in self.neurons[i]:
-                if random.uniform(0,1) < neuron.firing_rate/self.time_step: #TODO: it can't simulate firing rate less than 1 now
+                if random.uniform(0,1) < neuron.firing_rate/self.time_step: #TODO: it can't simulate firing rate less than 1Hz now
                     
-                    #check for early break
+                    #check if it is within the firing time of the neuron
                     if neuron.firing_time is not None:
-                        if self.timestamp<self.firing_time[0] or self.timestamp > self.firing_time[1]:
+                        if (neuron.firing_time[0] is not None and self.timestamp<neuron.firing_time[0]) or (neuron.firing_time[1] is not None and self.timestamp > neuron.firing_time[1]):
                             # outside firing range
                             continue
                     
                     # generate spike event
                     # waveform in (num_channel, num_samples)
-                    waveform = self.add_noise(neuron.waveform)
+                    waveform = neuron.get_waveform()
+                    assert waveform.ndim == 2
                     spk_evt = OpenEphysSpikeEvent({'n_channels': self.num_electrode, 'n_samples': neuron.waveform.shape[1],
                                                    'electrode_id': i, 'sorted_id': 0, 
                                                    'timestamp': self.timestamp, 'channel': 0, 
@@ -70,19 +74,23 @@ class SpikeGeneratorSource(TimeSource):
                     
                     event2send.append(Message('spike', spk_evt))
         
-        self.timestamp += int(self.time_step/1000*self.Fs)
+        self.timestamp += int(self.Fs/self.time_step)
         return event2send
 
-def make_neurons(neuron_nums: List[int], firing_rate: List[List[float]], templates: np.ndarray):
+def make_neurons(neuron_nums: List[int], firing_rate: List[List[float]], firing_time:List[List[Tuple[int,int]]], templates: np.ndarray):
+    '''
+    
+    templates: (cell, electrode, no of waveform, time)
+    '''
     neurons = []
     cell_idx = 0
     
     for i in range(len(neuron_nums)):
         neurons_in_chan = []
         for j in range(neuron_nums[i]):
-            n=SimulatedNeuron(firing_rate[i][j], waveform=templates[cell_idx,:,:])
+            n=SimulatedNeuron(firing_rate[i][j], waveform=templates[cell_idx], firing_time=firing_time[i][j])
             neurons_in_chan.append(n)
-            cell_idx += 2
+            cell_idx += 1
 
         neurons.append(neurons_in_chan)
         
@@ -91,9 +99,10 @@ def make_neurons(neuron_nums: List[int], firing_rate: List[List[float]], templat
         
 if __name__ == '__main__':
     # load the simulated waveform
-    templates = np.load('src/pyneurode/data/spike_templates.npy') # cells x electrode x timepoints
-
-    neurons = make_neurons([3,2,1],[[5,10,5],[10,20],[5]], templates=templates)
+    templates = np.load('src/pyneurode/data/spikes_waveforms.npy') # cells x electrode x timepoints
+    Fs=30000
+    # neurons = make_neurons([3,2,1],[[5,10,5],[10,20],[5]], templates=templates)
+    neurons = make_neurons([2],firing_rate=[[5,3]],firing_time=[[(None),(Fs*5, None)]], templates=templates)
     
     with ProcessorContext() as ctx:
         
