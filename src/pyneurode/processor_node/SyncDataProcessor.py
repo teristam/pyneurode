@@ -34,15 +34,18 @@ class SyncDataProcessor(BatchProcessor):
         
     def reset_buffer(self, adc_channels:int=None, spike_train_channels:int=None):
         # reset the internal buffer, usually used when the input shape has changed 
-        if adc_channels is not None:
-            self.adc_buffer = RingBuffer((self.buffer_length, adc_channels))
-        else:
-            self.adc_buffer = RingBuffer((self.buffer_length, self.adc_buffer.buffer.shape[1]))
         
-        if spike_train_channels is not None:
-            self.spike_buffer = RingBuffer((self.buffer_length, spike_train_channels))
-        else:
-            self.spike_buffer = RingBuffer((self.buffer_length, self.spike_buffer.buffer.shape[1]))
+        if self.adc_buffer is not None:
+            if adc_channels is not None:
+                self.adc_buffer = RingBuffer((self.buffer_length, adc_channels))
+            else:
+                self.adc_buffer = RingBuffer((self.buffer_length, self.adc_buffer.buffer.shape[1]))
+        
+        if self.spike_buffer is not None:
+            if spike_train_channels is not None and self.spike_buffer is not None:
+                self.spike_buffer = RingBuffer((self.buffer_length, spike_train_channels))
+            else:
+                self.spike_buffer = RingBuffer((self.buffer_length, self.spike_buffer.buffer.shape[1]))
             
         self.readHead = 0
 
@@ -91,7 +94,7 @@ class SyncDataProcessor(BatchProcessor):
  
         # Write to internal buffer
         if spike_train is not None:
-            self.log(logging.DEBUG, f'spike_train shape: {spike_train.shape}')
+            # self.log(logging.DEBUG, f'spike_train shape: {spike_train.shape}')
             if self.spike_buffer is None:
                  # create the a new buffer
                 self.spike_buffer = RingBuffer((self.buffer_length, spike_train.shape[1]))
