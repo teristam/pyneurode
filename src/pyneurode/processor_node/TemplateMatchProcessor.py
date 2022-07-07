@@ -157,14 +157,14 @@ class TemplateMatchProcessor(BatchProcessor):
                                             'df_sort_size': len(self.df_sort)
                                             } )
                 
-                return (SpikeTrainMessage(spk_train), SortedSpikeMessage(self.df_sort), metrics_msg)
+                return (SpikeTrainMessage(spk_train.T), SortedSpikeMessage(self.df_sort), metrics_msg)
             else:
-                (SpikeTrainMessage(spk_train), SortedSpikeMessage(self.df_sort))
+                (SpikeTrainMessage(spk_train.T), SortedSpikeMessage(self.df_sort))
 
 
 class SpikeTrainMessage(Message):
     """Message that contains the binned spike train
-    spiketrain is in the format (neuron x time)
+    spiketrain is in the format (time x neuron)
     """
     type = 'spike_train'
 
@@ -198,7 +198,7 @@ if __name__ == '__main__':
                                 filetype='message',batch_size=3)
         templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,min_num_spikes=500,time_bin=0.01)
         templateMatchProcessor = TemplateMatchProcessor(interval=0.01)
-        echoProcessor = EchoProcessor()
+        echoProcessor = EchoSink()
 
         zmqSource.connect(templateTrainProcessor, filters='spike')
         zmqSource.connect(templateMatchProcessor, filters='spike')
