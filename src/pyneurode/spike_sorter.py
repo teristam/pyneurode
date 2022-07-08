@@ -195,6 +195,7 @@ def makeSpikeDataframe(spikeEvent):
     spikelength = spikedata.shape[2]
     spikeN = spikedata.shape[0]
     chanN = spikedata.shape[1]
+    assert chanN < spikelength, f'Error, the spike shape does not seem right, it should be (N, chanN, samples) now it is {spikedata.shape}'
     channel_id = np.repeat(np.arange(chanN),spikelength)
     channel_ids = np.tile(channel_id, (spikeN,1) )
 
