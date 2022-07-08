@@ -37,6 +37,11 @@ class SpikeTemplateMessage(Message):
             'pca_transformer': pca_transformers,
             'standard_scalers': standard_scalers
         }
+        
+class RecomputeTemplateControlMessage(Message):
+    type = 'recompute_template'
+    def __init__(self):
+        super().__init__(self.type, None, None)
 
 class MountainsortTemplateProcessor(BatchProcessor):
     """Create spikes template using isosplit from mountainsort

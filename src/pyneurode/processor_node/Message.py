@@ -3,14 +3,15 @@ from typing import *
 import numpy as np
 from py import process
 
-@dataclass
 class Message:
     '''
-    Simple dataclass that transfer data between Processors
+    Simple class that transfer data between Processors
     '''
-    type: str
-    data: Any
-    timestamp: float = None
+    
+    def __init__(self, type:str, data:Any, timestamp:Optional[float]=None):
+        self.type = type
+        self.data = data
+        self.timestamp = timestamp
 
     def __repr__(self) -> str:
 

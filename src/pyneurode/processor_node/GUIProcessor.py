@@ -1,6 +1,8 @@
 from __future__ import annotations # for postponed evaluation
 from multiprocessing import Event
-from pyneurode.processor_node.Processor import ProcessError
+
+from pyparsing import Optional
+from pyneurode.processor_node.Processor import ProcessError, Processor
 from pyneurode.processor_node.Message import Message
 from .BatchProcessor import BatchProcessor
 import dearpygui.dearpygui as dpg
@@ -13,7 +15,7 @@ import time
 
 
 class GUIProcessor(BatchProcessor):
-    """    A GUIProcessor is a processor that receive messages for plotting and displaying the GUI.
+    """A GUIProcessor is a processor that receive messages for plotting and displaying the GUI.
     
     .. note:: its process() function will be called frequently. Avoid doing time consuming processing there.
     """
@@ -25,7 +27,8 @@ class GUIProcessor(BatchProcessor):
             internal_buffer_size (int, optional): size of the internal buffer to hold messages before they are displayed. Defaults to 1000.
         """
         super().__init__(interval=1/frame_rate, internal_buffer_size=internal_buffer_size)
-        self.visualizers:Dict(List(Visualizer)) = {}
+        self.visualizers:Dict[str,List[Visualizer]] = {} # a mapping of filter and their list of visualizers to process them
+        self.control_targets:Dict[Visualizer, Processor]= {} # a mapping of the visualizer that emites control message and the processor that will receive them
 
     def startup(self):
         super().startup()
@@ -45,7 +48,7 @@ class GUIProcessor(BatchProcessor):
 
 
 
-    def register_visualizer(self, visualizer:Visualizer, filters:List[str]):
+    def register_visualizer(self, visualizer:Visualizer, filters:List[str], control_targets:Optional[List[Processor]]=None):
         """Register a Visualizer object with the GUIProcessor. Only message of types specified in the
         filter list will be passed to the visualizer.
 
@@ -62,6 +65,13 @@ class GUIProcessor(BatchProcessor):
                 self.visualizers[f].append(visualizer)
             else:
                 self.visualizers[f].append(visualizer)
+        
+        if control_targets is not None:
+            # Connect where the message from visualizer should send to 
+            for target in control_targets:
+                self.control_targets[visualizer] = []
+                self.control_targets[visualizer].append(target)
+                self.connect(target) # enable sending of messaging to the target processor
 
     def main_loop(self):
         
@@ -107,6 +117,7 @@ class GUIProcessor(BatchProcessor):
         # sort the messages according to their type
         #TODO use a separate thread for each visualizer
         msg_list = {}
+        control_msg = []
 
         for msg in messages:
             if not msg.type in msg_list:
@@ -119,4 +130,7 @@ class GUIProcessor(BatchProcessor):
         for msg_type, msgs in msg_list.items():
             if  msg_type in self.visualizers:
                 for v in self.visualizers[msg_type]:
-                        v.update(msgs)
+                        msg = v.update(msgs)
+                        if v in self.control_targets:
+                            for target in self.control_targets[v]:
+                                self.send(msg, target.proc_name) #send messange to the connected processor for that visualizer

@@ -12,6 +12,8 @@ import shortuuid
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from typing import List, Union
 from pyneurode.processor_node.Processor import logger
+
+
 class Visualizer:
     """The base Visualizer class. Intended to be extended by subclasses.
     The UI should be constructed using the `init_gui()` function and updated based on the messages passed to it in the `update()` function.
