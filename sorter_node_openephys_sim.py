@@ -28,9 +28,10 @@ from pyneurode.processor_node.SpikeGeneratorSource import make_neurons, SpikeGen
 logging.basicConfig(level=logging.INFO)
 
 if  __name__ == '__main__':
-    templates = np.load('src/pyneurode/data/spike_templates.npy') # cells x electrode x timepoints
-
-    neurons = make_neurons([3,2,1],[[5,10,5],[10,20],[5]], templates=templates[:,:,:130])
+    templates = np.load('src/pyneurode/data/spikes_waveforms.npy') # cells x electrode x timepoints
+    Fs=30000
+    # Restrict the size of the template to avoid the waveform alignment to go wrong
+    neurons = make_neurons([2,2],firing_rate=[[30,10],[20,30]],firing_time=[[(None),(Fs*30, None)],[(Fs*30,None),(Fs*30,None)]], templates=templates[:,:,:,:130])
     
 
     with ProcessorContext() as ctx:
@@ -40,7 +41,7 @@ if  __name__ == '__main__':
         source = SpikeGeneratorSource(neurons)
         templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,min_num_spikes=500,training_period=15)
         templateMatchProcessor = TemplateMatchProcessor(interval=0.01,time_bin=0.01)
-        syncDataProcessor = SyncDataProcessor(interval=0.02)
+        syncDataProcessor = SyncDataProcessor(interval=0.02, ignore_adc=True)
         gui = GUIProcessor(internal_buffer_size=5000)
         spike2arduino = Spike2ArduinoTriggerProcessor([3], [13])
         arduinoSink = ArduinoTriggerSink("COM5")
@@ -56,6 +57,7 @@ if  __name__ == '__main__':
         source.connect(gui, 'adc_data')
         syncDataProcessor.connect(gui)
         templateMatchProcessor.connect(gui, ['df_sort','metrics'])
+        templateTrainProcessor.connect(gui, ['metrics'])
 
 
         analog_visualizer = AnalogVisualizer('Synchronized signals',scale=20, buffer_length=6000)
@@ -69,7 +71,5 @@ if  __name__ == '__main__':
         gui.register_visualizer(cluster_vis, filters=['df_sort'])
         gui.register_visualizer(latency_vis, filters=['metrics'])
 
-        ctx.register_processors(source, templateMatchProcessor, templateTrainProcessor,
-                                syncDataProcessor, gui, spike2arduino)
         
         ctx.start()
