@@ -39,7 +39,7 @@ if  __name__ == '__main__':
 
         # reading too fast may overflow the pipe
         source = SpikeGeneratorSource(neurons)
-        templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,min_num_spikes=500,training_period=15)
+        templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,min_num_spikes=500,training_period=None)
         templateMatchProcessor = TemplateMatchProcessor(interval=0.01,time_bin=0.01)
         syncDataProcessor = SyncDataProcessor(interval=0.02, ignore_adc=True)
         gui = GUIProcessor(internal_buffer_size=5000)
@@ -62,13 +62,13 @@ if  __name__ == '__main__':
 
         analog_visualizer = AnalogVisualizer('Synchronized signals',scale=20, buffer_length=6000)
         pos_visualizer = AnalogVisualizer('pos', buffer_length=6000)
-        cluster_vis = SpikeClusterVisualizer('cluster_vis')
+        cluster_vis = SpikeClusterVisualizer('cluster_vis', max_spikes=200)
         latency_vis = LatencyVisualizer('latency')
 
 
         gui.register_visualizer(analog_visualizer,filters=['synced_data'])
         gui.register_visualizer(pos_visualizer, filters=['adc_data'])
-        gui.register_visualizer(cluster_vis, filters=['df_sort'])
+        gui.register_visualizer(cluster_vis, filters=['df_sort'], control_targets=templateTrainProcessor)
         gui.register_visualizer(latency_vis, filters=['metrics'])
 
         
