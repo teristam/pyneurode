@@ -1,23 +1,27 @@
-from __future__ import annotations # for postponed evaluation
+from __future__ import annotations  # for postponed evaluation
+
 import functools
 import logging
+import threading
 
 from pyneurode.processor_node.Message import Message
+
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
+import cProfile
 import os
 import pickle
 import tempfile
 import time
 from dataclasses import dataclass
+from functools import wraps
 from multiprocessing import *
 from queue import Empty
 from typing import *
-from functools import wraps
-import cProfile
-import numpy as np
-import shortuuid
-import pyneurode.utils as utils
 
+import numpy as np
+import pyneurode.utils as utils
+import shortuuid
+from pyneurode.processor_node.Context import Context
 
 # import zmq
 
@@ -67,7 +71,7 @@ class Channel:
         except TimeoutError:
             return None
 
-class Processor:
+class Processor(Context):
     """The base class that handle real-time processing
 
     """
@@ -75,7 +79,7 @@ class Processor:
     # base class for all processor
     # when start, create its own process, open the port for sending and receiving data
     # should hide the underlying protocol used, so it is possible to use zmq and multiprocessing.Queue
-
+    
     def __init__(self):
         self.out_queues: Dict[str, Channel] = {}
         self.proc_name = self.__class__.__name__ +'_'+ shortuuid.ShortUUID().random(5) #unique identying string for the processor
@@ -85,6 +89,14 @@ class Processor:
         self.log(logging.DEBUG, 'Initializing')
         self.latency = None #processing latency
         self.run_count = 0
+        
+        # regsiter itself to the current context
+        try:
+            context = type(self).get_context() # have to class it from class
+            self.log(logging.DEBUG, f'Context found. I am registering myself to {context}')
+            self.get_context().register_processors(self)
+        except TypeError:
+            self.log(logging.DEBUG, 'No context found. Have to register manually.')
 
     def init_context(self, ctx):
         self.shutdown_event = ctx.shutdown_event
@@ -100,7 +112,6 @@ class Processor:
         self.log(logging.DEBUG, 'Shut down')
         self.in_queue.close()
         self.in_queue.join_thread() #flush the all message to the pipe immediately so that it can be shut down properly
-        
 
     def run(self):
         assert self.shutdown_event is not None, 'The processor context has not been initiated'
@@ -116,7 +127,7 @@ class Processor:
         
     def connect(self, to_processor:Processor, filters=None):
         self.log(logging.DEBUG, f'Connecting {self.proc_name} and {to_processor.proc_name}')
-        self.out_queues[self.proc_name+'-'+to_processor.proc_name] = Channel(to_processor.in_queue, filters)
+        self.out_queues[to_processor.proc_name] = Channel(to_processor.in_queue, filters)
 
     def send(self, data:Union[Message, List[Message]], output_name:str=None):
         # output the data to downstream queue specified by the output_name (if specified)
@@ -133,6 +144,7 @@ class Processor:
             for d in data:
                 if output_name is not None:
                     self.out_queues[output_name].send(d)
+                    self.log(logging.DEBUG, f'{d} send to {output_name}')
                 else:
                     for q in self.out_queues.keys():
                         self.out_queues[q].send(d)
@@ -199,6 +211,7 @@ class Processor:
         """
         # override this function in sub-class to implement specific functions
         raise NotImplementedError(f'{self.__class__.__name__}.process is not implemented')
+
 
 
 class Sink(Processor):
