@@ -1,4 +1,5 @@
 from abc import ABC
+import logging
 import dearpygui.dearpygui as dpg
 from pyneurode.processor_node.GUIProcessor import GUIProcessor
 from pyneurode.processor_node.Message import Message
@@ -6,9 +7,10 @@ import numpy as np
 import shortuuid
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from typing import List, Union
-from pyneurode.processor_node.Processor import SineTimeSource
+from pyneurode.processor_node.Processor import SineTimeSource, Sink
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 from pyneurode.processor_node.Visualizer import Visualizer
+from pyneurode.processor_node.MountainsortTemplateProcessor import RecomputeTemplateControlMessage
 
 class AnalogVisualizer(Visualizer):
     '''
@@ -43,9 +45,11 @@ class AnalogVisualizer(Visualizer):
                     self.scale = app_data
                     dpg.fit_axis_data(self.y_axis)
                     
+                with dpg.group():
+                    dpg.add_slider_float(label='Scale slider', width=window_width/4,
+                                            max_value=100, default_value=20, callback=scale_slider_update)
                 
-                dpg.add_slider_float(label='Scale slider', width=window_width/4,
-                                         max_value=100, default_value=20, callback=scale_slider_update)
+
             
 
     def update(self, messages: List[Message]):
@@ -101,17 +105,29 @@ class AnalogVisualizer(Visualizer):
         else:
             for i in range(len(ydata)):
                 dpg.set_value(self.series_name[i],(xdata,ydata[i])) #must be called in main thread
-            
-            
+                
+
+
+class DummpyControlSink(Sink):
+    def process(self, message: Message):
+        if type(message) is RecomputeTemplateControlMessage:
+            self.log(logging.DEBUG, 'Recompute message received')  
+        else:
+            self.log(logging.DEBUG, f'Received message {type(message)}')
+                      
+           
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
     with ProcessorContext() as ctx:
         sineWave = SineTimeSource(0.1,frequency = 12.3, channel_num=10, sampling_frequency=100)
         analog_visualizer = AnalogVisualizer('Synchronized signals',scale=20, buffer_length=6000)
+        control = DummpyControlSink()
+        
         gui = GUIProcessor(internal_buffer_size=5000)
         
         sineWave.connect(gui)
-        gui.register_visualizer(analog_visualizer,filters=['sine'])
-
-        ctx.register_processors(gui, sineWave)
+        gui.register_visualizer(analog_visualizer,filters=['sine'], control_targets=[control])
+        ctx.register_processors(gui, sineWave,  )
         
         ctx.start()

@@ -7,6 +7,7 @@ import pandas as pd
 from sklearn import cluster
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from pyneurode.processor_node.Message import Message
+from pyneurode.processor_node.MountainsortTemplateProcessor import RecomputeTemplateControlMessage
 from .Visualizer import Visualizer
 import time
 
@@ -39,7 +40,6 @@ class SpikeClusterVisualizer(Visualizer):
         self.max_plot_per_cluster = max_plot_per_cluster
         self.plot_need_refit = True # whether it is the first time the plots are shown
         self.template_update_id = None
-        
 
     def init_gui(self):
         
@@ -80,9 +80,15 @@ class SpikeClusterVisualizer(Visualizer):
 
                         self.list_box=dpg.add_listbox(label='Clusters',items=list(self.cluster_list), width=-1,
                                 callback=refit_callback)
+                        
+                        def btn_recompute_template(sender, app_data, user_data):
+                            self.send_control_msg(RecomputeTemplateControlMessage())
 
                         # plotting options
                         self.checkbox_autofit = dpg.add_checkbox(label='Auto scale', default_value=True, callback=refit_callback)
+                        
+                                        
+                        dpg.add_button(label='Re-compute template', callback=btn_recompute_template)
 
             self.init_theme()
 
@@ -182,7 +188,6 @@ class SpikeClusterVisualizer(Visualizer):
         # Note: when there are lots of message, this part will be super slow, may make more sense to discard some of the data
         # since it is only for visualization
 
-         
         for msg in messages:
             # only keep a certain number of spikes
             #TODO ideally a separate queue for each cluster, probably using dequeue after df.to_dict()?
@@ -197,7 +202,7 @@ class SpikeClusterVisualizer(Visualizer):
             
             # avoid appending large dataframe
             if len(df) > self.max_spike:
-                # too many
+                # too many, only get the latest spikes
                 self.df_sort = df[-self.max_spike:-1]
             else:
                 # combine the correct portion

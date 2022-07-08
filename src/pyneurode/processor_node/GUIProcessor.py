@@ -10,7 +10,7 @@ import logging
 from queue import Empty
 import numpy as np
 from .Visualizer import Visualizer
-from typing import List, Dict
+from typing import List, Dict, Union
 import time 
 
 
@@ -48,7 +48,7 @@ class GUIProcessor(BatchProcessor):
 
 
 
-    def register_visualizer(self, visualizer:Visualizer, filters:List[str], control_targets:Optional[List[Processor]]=None):
+    def register_visualizer(self, visualizer:Visualizer, filters:List[str], control_targets:Optional[Union[List[Processor], Processor]]=None):
         """Register a Visualizer object with the GUIProcessor. Only message of types specified in the
         filter list will be passed to the visualizer.
 
@@ -67,6 +67,8 @@ class GUIProcessor(BatchProcessor):
                 self.visualizers[f].append(visualizer)
         
         if control_targets is not None:
+            if type(control_targets) is not list:
+                control_targets = [control_targets]
             # Connect where the message from visualizer should send to 
             for target in control_targets:
                 self.control_targets[visualizer] = []
@@ -130,7 +132,7 @@ class GUIProcessor(BatchProcessor):
         for msg_type, msgs in msg_list.items():
             if  msg_type in self.visualizers:
                 for v in self.visualizers[msg_type]:
-                        msg = v.update(msgs)
+                        msg = v._refresh(msgs)
                         if v in self.control_targets:
                             for target in self.control_targets[v]:
                                 self.send(msg, target.proc_name) #send messange to the connected processor for that visualizer

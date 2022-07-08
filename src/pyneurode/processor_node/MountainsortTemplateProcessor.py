@@ -77,8 +77,17 @@ class MountainsortTemplateProcessor(BatchProcessor):
     def process(self, msgs):
         # each time, it will load multiple message
         # each message may  contain multiple spikesEvent
+        
+        data = []
+        need_sort = False
 
-        data = [m.data for m in msgs]
+        
+        for m in msgs:
+            if type(m) is RecomputeTemplateControlMessage:
+                self.log(logging.DEBUG, f'Received re-sort command.')
+                need_sort = True
+            elif m.type == 'spike':
+                data.append(m.data)
         
         self.spike_data = self.spike_data + data # TODO: possible performance regresssion here, as the list is growing every loop
 
@@ -87,7 +96,6 @@ class MountainsortTemplateProcessor(BatchProcessor):
             self.spike_print_counter = len(self.spike_data)//500
             self.log(logging.DEBUG, f'spike length {len(self.spike_data)}')
 
-        need_sort = False
         # Cluster to find templates
         if self.last_sort_time is None:
             if (len(self.spike_data)>(self.spike_len_prev+self.MIN_NUM_SPIKE)):
