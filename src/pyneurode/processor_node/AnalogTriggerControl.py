@@ -13,7 +13,7 @@ import numpy as np
 class AnalogTriggerControl(Visualizer):
     
     '''
-    Display a analog value
+    Send a message when an analog signal exceed a certain threshold
     '''
     def __init__(self, name:str,  buffer_length:int = 500, scale = 1, time_scale=None) -> None:
         super().__init__(name)
@@ -35,6 +35,7 @@ class AnalogTriggerControl(Visualizer):
         self.selected_cells = []
         self.threshold_sliders = []
         self.threshold_timeseries=[]
+        self.trigger_direction = []
         self.subplots = None
         
     def init_gui(self):
@@ -55,6 +56,7 @@ class AnalogTriggerControl(Visualizer):
             
         self.control_list = []
         self.threshold_sliders = []
+        self.trigger_direction = []
         
         def selected_cell_changed(sender, is_selected, cell_no):
             if is_selected:
@@ -74,9 +76,11 @@ class AnalogTriggerControl(Visualizer):
             with dpg.group(horizontal=True,parent=self.control_panel) as gp:
                 dpg.add_checkbox(label = f'Cell {i}', callback=selected_cell_changed, user_data=i)
                 slider = dpg.add_slider_float(default_value=0.5,callback=slider_changed, user_data=i, max_value=1, min_value=-1)
+                trigger_direction = dpg.add_combo(items=['Above','Below'], default_value='Above')
                 
                 self.threshold_sliders.append(slider)
                 self.control_list.append(gp)
+                self.trigger_direction.append(trigger_direction)
                 
                 
     def update_subplots(self):
