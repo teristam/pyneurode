@@ -42,9 +42,8 @@ class AnalogTriggerControl(Visualizer):
         window_width = 800
         with dpg.window(label=self.name, width=window_width, height=500, tag=self.name, autosize=True):
             with dpg.group(horizontal=True):
-                self.plot_panel = dpg.add_child_window(width=window_width*3/4)
-                    
-                self.control_panel = dpg.add_child_window(autosize_x=True)
+                self.plot_panel = dpg.add_child_window(width=-window_width*2/4) #negative means no. of pixel from the right of its container
+                self.control_panel = dpg.add_child_window(width=window_width*2/4)
                     
     def update_cell_select_list(self):
         # update the checkboxes for selecting which cell to trigger
@@ -70,13 +69,14 @@ class AnalogTriggerControl(Visualizer):
         
         def slider_changed(sender, value, cell_no):
             #update the horizontal line of the threshold
-            dpg.set_value(self.threshold_timeseries[cell_no], ([value],))
+            if cell_no < len(self.threshold_timeseries):
+                dpg.set_value(self.threshold_timeseries[cell_no], ([value],))
             
         for i in range(no_cell):
             with dpg.group(horizontal=True,parent=self.control_panel) as gp:
-                dpg.add_checkbox(label = f'Cell {i}', callback=selected_cell_changed, user_data=i)
-                slider = dpg.add_slider_float(default_value=0.5,callback=slider_changed, user_data=i, max_value=1, min_value=-1)
-                trigger_direction = dpg.add_combo(items=['Above','Below'], default_value='Above')
+                dpg.add_checkbox(label = f'Signal {i}', callback=selected_cell_changed, user_data=i)
+                slider = dpg.add_slider_float(default_value=0.5,callback=slider_changed, user_data=i, max_value=1, min_value=-1, width=100)
+                trigger_direction = dpg.add_combo(items=['Above','Below'], default_value='Above', width=100)
                 
                 self.threshold_sliders.append(slider)
                 self.control_list.append(gp)
