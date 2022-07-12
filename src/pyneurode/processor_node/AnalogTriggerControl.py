@@ -10,7 +10,7 @@ from pyneurode.processor_node.Visualizer import Visualizer
 import dearpygui.dearpygui as dpg
 import numpy as np 
 
-class FiringRateTriggerControl(Visualizer):
+class AnalogTriggerControl(Visualizer):
     
     '''
     Display a analog value
@@ -33,6 +33,8 @@ class FiringRateTriggerControl(Visualizer):
         self.y_axes = []
         self.x_axes = []
         self.selected_cells = []
+        self.threshold_sliders = []
+        self.threshold_timeseries=[]
         self.subplots = None
         
     def init_gui(self):
@@ -52,6 +54,7 @@ class FiringRateTriggerControl(Visualizer):
             dpg.delete_item(gp) 
             
         self.control_list = []
+        self.threshold_sliders = []
         
         def selected_cell_changed(sender, is_selected, cell_no):
             if is_selected:
@@ -62,12 +65,17 @@ class FiringRateTriggerControl(Visualizer):
             self.log(logging.DEBUG, f'Selected cells: {self.selected_cells}')            
             self.update_subplots() # also update the supblot associated with the selected cell
 
-            
+        
+        def slider_changed(sender, value, cell_no):
+            #update the horizontal line of the threshold
+            dpg.set_value(self.threshold_timeseries[cell_no], ([value],))
             
         for i in range(no_cell):
             with dpg.group(horizontal=True,parent=self.control_panel) as gp:
                 dpg.add_checkbox(label = f'Cell {i}', callback=selected_cell_changed, user_data=i)
-                dpg.add_slider_float()
+                slider = dpg.add_slider_float(default_value=0.5,callback=slider_changed, user_data=i, max_value=1, min_value=-1)
+                
+                self.threshold_sliders.append(slider)
                 self.control_list.append(gp)
                 
                 
@@ -79,6 +87,7 @@ class FiringRateTriggerControl(Visualizer):
             dpg.delete_item(self.subplots)
         self.y_axes.clear()
         self.x_axes.clear()
+        self.threshold_timeseries.clear()
     
         # Re-create the subplots and line series    
         self.series_name = [f'{i}_{self.name}' for i in self.selected_cells]
@@ -90,12 +99,17 @@ class FiringRateTriggerControl(Visualizer):
             self.subplots = subplots
             for i in range(no_cell):
                 with dpg.plot():
+                    dpg.add_plot_legend()
                     xaxis = dpg.add_plot_axis(dpg.mvXAxis, label="")
                     yaxis = dpg.add_plot_axis(dpg.mvYAxis, label="")
                     self.y_axes.append(yaxis)
                     self.x_axes.append(xaxis)
                     
                     dpg.add_line_series([],[], label=self.series_name[i], parent=yaxis, tag=self.series_name[i])
+                    
+                    #add the line for the threshold
+                    hs = dpg.add_hline_series([dpg.get_value(self.threshold_sliders[i])], parent=yaxis, label=f'threshold {self.selected_cells[i]}')
+                    self.threshold_timeseries.append(hs)
                     
         self.need_fit_axis = True #refit the axis to the data
 
@@ -131,8 +145,6 @@ class FiringRateTriggerControl(Visualizer):
 
         # Re-arrange the data to be suitable for plotting
         ydata = self.buffer.buffer.T.copy()
-        # shift = np.arange(ydata.shape[0])[None,].T * self.scale
-        # ydata += shift #shift the data for different channel
 
         ydata = ydata.tolist()
  
@@ -159,7 +171,7 @@ if __name__ == '__main__':
 
     with ProcessorContext() as ctx:
         sineWave = SineTimeSource(0.1,frequency = 12.3, channel_num=3, sampling_frequency=100)
-        analog_visualizer = FiringRateTriggerControl('Synchronized signals')
+        analog_visualizer = AnalogTriggerControl('Analog Trigger Control')
         control = DummpyControlSink()
         
         gui = GUIProcessor(internal_buffer_size=5000)
