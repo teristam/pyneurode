@@ -25,7 +25,7 @@ class Visualizer:
         this is an exmaple showing how it works
     
     """
-    def __init__(self, name:str):
+    def __init__(self, name:str, verbose=False):
         """
 
         Args:
@@ -34,6 +34,7 @@ class Visualizer:
         self.name = name
         self.log = functools.partial(logger, self.name)
         self.control_msgs = []
+        self.verbose = verbose
 
 
     def init_gui(self):
@@ -51,7 +52,7 @@ class Visualizer:
         
         # send control message out
         msg = self.control_msgs
-        if len(msg) > 0:
+        if len(msg) > 0 and self.verbose:
             self.log(logging.INFO, msg )
         self.control_msgs = []
         
