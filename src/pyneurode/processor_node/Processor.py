@@ -144,7 +144,7 @@ class Processor(Context):
             for d in data:
                 if output_name is not None:
                     self.out_queues[output_name].send(d)
-                    self.log(logging.DEBUG, f'{d} send to {output_name}')
+                    # self.log(logging.DEBUG, f'{d} send to {output_name}')
                 else:
                     for q in self.out_queues.keys():
                         self.out_queues[q].send(d)
