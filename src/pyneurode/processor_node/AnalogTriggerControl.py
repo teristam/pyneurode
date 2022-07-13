@@ -1,6 +1,5 @@
 from cgitb import enable
 import logging
-from re import S
 from typing import List
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from pyneurode.processor_node.AnalogVisualizer import DummpyControlSink
