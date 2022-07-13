@@ -6,7 +6,7 @@ import json
 
 class ZmqSubscriberSource(TimeSource):
     
-    def __init__(self, interval=0.001, addr="tcp://localhost:5554"):
+    def __init__(self, interval=0, addr="tcp://localhost:5554"):
         super().__init__(interval=interval)
         self.addr = addr
         
