@@ -1,7 +1,8 @@
 import json
 import logging
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
+import numpy as np
 import zmq
 from matplotlib.font_manager import json_dump
 from pyneurode.processor_node.Message import Message
@@ -12,8 +13,8 @@ from pyneurode.processor_node.ZmqSubscriberSource import ZmqSubscriberSource
 
 class ZmqMessage(Message):
     type = 'zmq_message'
-    def __init__(self, data: Any, timestamp: Optional[float] = None):
-        super().__init__(type, data, timestamp)
+    def __init__(self, data:Dict, timestamp: Optional[float] = None):
+        super().__init__(self.type, data, timestamp)
 
 class ZmqPublisherSink(Sink):
     
@@ -29,7 +30,6 @@ class ZmqPublisherSink(Sink):
         self.log(logging.INFO,self.addr)
 
     def process(self, message: Message):
-    
         if type(message) is ZmqMessage:
             self.socket.send_string(json.dumps(message.data))
             
