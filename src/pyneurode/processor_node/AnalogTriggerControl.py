@@ -133,7 +133,10 @@ class AnalogTriggerControl(Visualizer):
         # check if the threshold has been exceeded
         for i, is_selected in enumerate(self.selected_cells):
                 if is_selected:
-                    if np.max(data[i]) > dpg.get_value(self.threshold_sliders[i]):
+                    assert i < data.shape[1], f'data size is too small: i: {i}  data shape: {data.shape}'
+                    assert i < len(self.threshold_sliders), 'too few threshold slider'
+                    
+                    if np.max(data[:,i]) > dpg.get_value(self.threshold_sliders[i]):
                         if (time.time() - self.last_trigger_time) > self.hysteresis:
                             #avoid sending too many messages
                             self.send_control_msg(self.message)
