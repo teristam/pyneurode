@@ -18,9 +18,10 @@ class ZmqMessage(Message):
 
 class ZmqPublisherSink(Sink):
     
-    def __init__(self, addr="tcp://*:5554"):
+    def __init__(self, addr="tcp://*:5554", verbose=False):
         super().__init__()
         self.addr = addr
+        self.verbose = verbose
         
     def startup(self):
         super().startup()
@@ -31,6 +32,8 @@ class ZmqPublisherSink(Sink):
 
     def process(self, message: Message):
         if type(message) is ZmqMessage:
+            if self.verbose:
+                self.log(logging.INFO, message)
             self.socket.send_string(json.dumps(message.data))
             
 
