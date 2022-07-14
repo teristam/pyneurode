@@ -187,48 +187,46 @@ class SpikeClusterVisualizer(Visualizer):
 
         # Note: when there are lots of message, this part will be super slow, may make more sense to discard some of the data
         # since it is only for visualization
-
-        for msg in messages:
-            # only keep a certain number of spikes
-            #TODO ideally a separate queue for each cluster, probably using dequeue after df.to_dict()?
-            df = msg.data
-            
-            # clear current wavefroms if it is using a new template
-            if self.template_update_id is None:
-                self.template_update_id = df.iloc[-1].template_update_id
-            elif not self.template_update_id == df.iloc[-1].template_update_id:
-                self.clear_display()
-                self.template_update_id = df.iloc[-1].template_update_id
-            
-            # avoid appending large dataframe
-            if len(df) > self.max_spike:
-                # too many, only get the latest spikes
-                self.df_sort = df[-self.max_spike:-1]
-            else:
-                # combine the correct portion
-                leftover_length = self.max_spike - len(self.df_sort)
-                self.df_sort = pd.concat([self.df_sort[-leftover_length:], df], ignore_index=True)
-
-
-            if len(self.df_sort)>0:
-                #update the cluster id
-                cluster_ids = set(self.df_sort.cluster_id.unique())
-                # print('cluster id in visuzlier: ', self.df_sort.cluster_id)
-                if not cluster_ids in self.cluster_list:
-                    self.cluster_list = self.cluster_list.union(cluster_ids)
-                    items = sorted(list(self.cluster_list))
-                    dpg.configure_item(self.list_box, items=items, num_items=len(items))
-
-                self.drawSpikeWaveform()
-                self.drawPCA()
-
-                # auto fit the plots on first plot
-                if self.plot_need_refit:
-                    if dpg.get_value(self.checkbox_autofit):
-                        self.auto_fit_plots()
-                    self.plot_need_refit = False
-
         
+        
+        df = pd.concat([m.data for m in  messages])
+        
+        # clear current wavefroms if it is using a new template
+        if self.template_update_id is None:
+            self.template_update_id = df.iloc[-1].template_update_id
+        elif not self.template_update_id == df.iloc[-1].template_update_id:
+            self.clear_display()
+            self.template_update_id = df.iloc[-1].template_update_id
+        
+        # avoid appending large dataframe
+        if len(df) > self.max_spike:
+            # too many, only get the latest spikes
+            self.df_sort = df[-self.max_spike:-1]
+        else:
+            # combine the correct portion
+            leftover_length = self.max_spike - len(self.df_sort)
+            self.df_sort = pd.concat([self.df_sort[-leftover_length:], df], ignore_index=True)
+
+
+        if len(self.df_sort)>0:
+            #update the cluster id
+            cluster_ids = set(self.df_sort.cluster_id.unique())
+            # print('cluster id in visuzlier: ', self.df_sort.cluster_id)
+            if not cluster_ids in self.cluster_list:
+                self.cluster_list = self.cluster_list.union(cluster_ids)
+                items = sorted(list(self.cluster_list))
+                dpg.configure_item(self.list_box, items=items, num_items=len(items))
+
+            self.drawSpikeWaveform()
+            self.drawPCA()
+
+            # auto fit the plots on first plot
+            if self.plot_need_refit:
+                if dpg.get_value(self.checkbox_autofit):
+                    self.auto_fit_plots()
+                self.plot_need_refit = False
+
+    
         lapsed = time.time()-start
         if lapsed > 0.1:
             print(f'warning: spike cluster udpate time: {lapsed}')
