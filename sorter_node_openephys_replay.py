@@ -5,6 +5,7 @@ from datetime import datetime
 import dearpygui.dearpygui as dpg
 
 import pyneurode as dc
+from pyneurode.processor_node.AnalogTriggerControl import AnalogTriggerControl
 from pyneurode.processor_node.AnalogVisualizer import *
 from pyneurode.processor_node.ArduinoSink import ArduinoSink
 from pyneurode.processor_node.ArduinoTriggerSink import ArduinoTriggerSink
@@ -22,6 +23,7 @@ from pyneurode.processor_node.SpikeClusterVisualizer import \
     SpikeClusterVisualizer
 from pyneurode.processor_node.SpikeSortProcessor import SpikeSortProcessor
 from pyneurode.processor_node.SyncDataProcessor import SyncDataProcessor
+from pyneurode.processor_node.ZmqPublisherSink import ZmqMessage, ZmqPublisherSink
 from pyneurode.processor_node.ZmqSource import ZmqSource
 
 '''
@@ -38,47 +40,46 @@ logging.basicConfig(level=logging.INFO)
 
 if  __name__ == '__main__':
     start  = time.time()
+    
+    msg = ZmqMessage({'rewarded':True})
+
 
     with ProcessorContext() as ctx:
         #TODO: need some way to query the output type of processor easily
 
         # reading too fast may overflow the pipe
-        zmqSource = FileEchoSource(interval=0.01, filename='E:/decoder_test_data/M10_2022-06-23_12-43-50_test4/M10_test4_20220623_124341_packets.pkl', 
+        zmqSource = FileEchoSource(interval=0.01, filename='E:\decoder_test_data\M7_2022-07-13_12-17-06_test3\M7_test3_20220713_121658_24062b_packets.pkl', 
                                 filetype='message',batch_size=3)
         
         # zmqSource = ZmqSource(adc_channel=20,time_bin = 0.01)
-        templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,min_num_spikes=500, training_period=20)
+        templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,min_num_spikes=500, training_period=None)
         templateMatchProcessor = TemplateMatchProcessor(interval=0.01,time_bin=0.01)
         syncDataProcessor = SyncDataProcessor(interval=0.02)
+        analogControl = AnalogTriggerControl("Trigger control", message2send=msg, hysteresis=1)
         gui = GUIProcessor(internal_buffer_size=5000)
         spike2arduino = Spike2ArduinoTriggerProcessor([3], [13])
-        arduinoSink = ArduinoTriggerSink("COM5")
+        zmqPublisherSink = ZmqPublisherSink(verbose=True)
 
         zmqSource.connect(templateTrainProcessor, filters='spike')
         zmqSource.connect(templateMatchProcessor, filters='spike')
         templateTrainProcessor.connect(templateMatchProcessor)
         templateMatchProcessor.connect(syncDataProcessor)
         templateMatchProcessor.connect(spike2arduino)
-        spike2arduino.connect(arduinoSink)
         zmqSource.connect(syncDataProcessor, 'adc_data')
 
         zmqSource.connect(gui, 'adc_data')
         syncDataProcessor.connect(gui)
         templateMatchProcessor.connect(gui, ['df_sort','metrics'])
 
-
         analog_visualizer = AnalogVisualizer('Synchronized signals',scale=20, buffer_length=6000)
         pos_visualizer = AnalogVisualizer('pos', buffer_length=6000)
         cluster_vis = SpikeClusterVisualizer('cluster_vis')
         latency_vis = LatencyVisualizer('latency')
 
-
         gui.register_visualizer(analog_visualizer,filters=['synced_data'])
         gui.register_visualizer(pos_visualizer, filters=['adc_data'])
         gui.register_visualizer(cluster_vis, filters=['df_sort'])
         gui.register_visualizer(latency_vis, filters=['metrics'])
+        gui.register_visualizer(analogControl, filters=['synced_data'], control_targets=[zmqPublisherSink])
 
-        ctx.register_processors(zmqSource, templateMatchProcessor, templateTrainProcessor,
-                                syncDataProcessor, gui, spike2arduino)
-        
         ctx.start()
