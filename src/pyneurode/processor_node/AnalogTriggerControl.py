@@ -20,7 +20,8 @@ class AnalogTriggerControl(Visualizer):
     '''
     Send a message when an analog signal exceed a certain threshold
     '''
-    def __init__(self, name:str, message2send:Message, hysteresis=0.01, buffer_length:int = 500, scale = 1, time_scale=None) -> None:
+    def __init__(self, name:str, message2send:Message, hysteresis=0.01, 
+                 buffer_length:int = 500, scale = 1, time_scale=None, smoothing_alpha=0.1) -> None:
         super().__init__(name)
         self.plot_data = (np.arange(buffer_length), np.zeros((buffer_length,)))
         self.name = name #unique identying string for the visualizer
@@ -45,6 +46,7 @@ class AnalogTriggerControl(Visualizer):
         self.message = message2send #message to send when the threshold is triggered
         self.hysteresis = hysteresis # minimum among of time that must pass before the next trigger is send
         self.last_trigger_time = 0
+        self.smoothing_alpha = smoothing_alpha # whether to smooth the data
         
     def init_gui(self):
         window_width = 800
@@ -52,6 +54,15 @@ class AnalogTriggerControl(Visualizer):
             with dpg.group(horizontal=True):
                 self.plot_panel = dpg.add_child_window(width=-window_width*2/4) #negative means no. of pixel from the right of its container
                 self.control_panel = dpg.add_child_window(width=window_width*2/4)
+                
+                def smooth_alpha_changed(sender, value, userdata):
+                    self.smoothing_alpha = value
+                
+                dpg.add_drag_float(label="smoothing alpha", parent=self.control_panel, 
+                                   clamped=True, 
+                                   width = 200,
+                                   max_value=1, default_value=self.smoothing_alpha, speed=0.02, callback=smooth_alpha_changed)
+                dpg.add_spacing(parent=self.control_panel)
                     
     def update_cell_select_list(self):
         # update the checkboxes for selecting which cell to trigger
@@ -142,7 +153,24 @@ class AnalogTriggerControl(Visualizer):
                             self.send_control_msg(self.message)
                             self.last_trigger_time = time.time()
                 
+    def exponential_smooth(self, data):
+        # smooth the data via exponential smoothing and write to buffer
+        if self.buffer.absWriteHead > 1:
+            # only smoothing when there is previous data
+            prev_x = self.buffer.readLatest(1)
+            data_s = np.zeros_like(data)  
+            alpha = self.smoothing_alpha
+                      
+            for i in range(data.shape[0]):
+                if i == 0:
+                    data_s[i,:] = data[i,:] * alpha + (1-alpha)*prev_x
+                else:
+                    data_s[i, :] = data[i,:] * alpha + (1-alpha)*data_s[i-1,:]
 
+            return data_s
+        else:
+            return data
+            
 
     def update(self, messages: List[Message]):
         # message data format time x channel
@@ -155,19 +183,32 @@ class AnalogTriggerControl(Visualizer):
                 self.buffer = RingBuffer((m.data.shape[0]*2, m.data.shape[1]))
             else:
                 try:
-                    self.buffer.write(m.data)
+                    if self.smoothing_alpha > 0:
+                        data2write = self.exponential_smooth(m.data)
+                    else:
+                        data2write = m.data
+                        
+                    self.buffer.write(data2write)
+                    
                     if len(self.control_list) == 0:
                         self.update_cell_select_list()
-                    self.check_if_trigger(m.data)
+                        
+                    self.check_if_trigger(data2write)
                     
                 except ValueError:
                     # data shape have changed, need to refresh all the plots
                     self.buffer = RingBuffer((self.buffer_length, m.data.shape[1]))
-                    self.buffer.write(m.data)
+                    
+                    if self.smoothing_alpha > 0:
+                        data2write = self.exponential_smooth(m.data)
+                    else:
+                        data2write = m.data
+                        
+                    self.buffer.write(data2write)
                     self.first_run = True
                     # update the cell selection list
                     self.update_cell_select_list()
-                    self.check_if_trigger(m.data)
+                    self.check_if_trigger(data2write)
 
         ####
         # update the plot
@@ -204,8 +245,10 @@ if __name__ == '__main__':
 
 
     with ProcessorContext() as ctx:
-        sineWave = SineTimeSource(0.1,frequency = 0.5, channel_num=3, sampling_frequency=100)
-        analog_visualizer = AnalogTriggerControl('Analog Trigger Control', message2send=msg, hysteresis=0.5)
+        sineWave = SineTimeSource(0.1,frequency = 0.5, channel_num=3, sampling_frequency=100, noise_std=1)
+        analog_visualizer = AnalogTriggerControl('Analog Trigger Control',
+                                                 message2send=msg,
+                                                 hysteresis=0.5)
         zmqSink = ZmqPublisherSink()
         zmqSource = ZmqSubscriberSource()
         
