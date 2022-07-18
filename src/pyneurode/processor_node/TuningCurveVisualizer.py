@@ -168,8 +168,6 @@ class TuningCurveVisualizer(AnalogVisualizer):
         x, y = self.tuning_curve_estimator.get_tuning_curve()
         for i, is_selected in enumerate(self.selected_cells):
             if is_selected:
-                #sometimes there is a slight delay when new series_names are added
-                #TODO: check if the series name depends on the order of the toggle of the checkbox
                 dpg.set_value(self.series_name[i],(x, y[i,:])) #must be called in main thread
         
         
@@ -177,10 +175,11 @@ class TuningCurveVisualizer(AnalogVisualizer):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     
-    x = np.random.normal(5,scale=5,size=(200,1))
+    # x = np.random.normal(5,scale=5,size=(200,1))
+    x = np.random.randint(0,20,(200,1))
     y = np.zeros((len(x),3),dtype=float)
     for i in range(len(x)):
-        y[i,:] = np.random.normal(x[i], size=3)
+        y[i,:] = np.random.normal(x[i]%10, size=3)
         
     data = np.hstack([y,x])
     print(data.shape)
@@ -192,7 +191,7 @@ if __name__ == '__main__':
 
     with ProcessorContext() as ctx:
         source = MsgTimeSource(0.1, msg)
-        visualizer = TuningCurveVisualizer('Synchronized signals', x_variable_idx = 1, nbin=20, buffer_length=6000)
+        visualizer = TuningCurveVisualizer('Synchronized signals', x_variable_idx = -1, nbin=20, buffer_length=6000)
         control = DummpyControlSink()
         
         gui = GUIProcessor(internal_buffer_size=5000)
