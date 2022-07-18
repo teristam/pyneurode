@@ -30,27 +30,29 @@ class AnalogVisualizer(Visualizer):
         self.time_cursor = 'time_cursor'
         self.data_idx = None
         self.series_name = None
+        self.control_panel = None
 
     def init_gui(self):
         window_width = 800
         with dpg.window(label=self.name, width=window_width, height=500, tag=self.name):
             with dpg.group(horizontal=True):
-                with dpg.plot(label='Plot', height=-1, width=window_width/4*3) as plot_id:
-                    self.x_axis = dpg.add_plot_axis(dpg.mvXAxis, label="")
-                    self.y_axis = dpg.add_plot_axis(dpg.mvYAxis, label="")
-                    dpg.set_axis_limits_auto(self.x_axis)
-                    dpg.set_axis_limits_auto(self.y_axis)
-                    
-                def scale_slider_update(sender, app_data,user_data):
-                    self.scale = app_data
-                    dpg.fit_axis_data(self.y_axis)
-                    
-                with dpg.group():
-                    dpg.add_slider_float(label='Scale slider', width=window_width/4,
-                                            max_value=100, default_value=20, callback=scale_slider_update)
+                with dpg.child_window(width = -window_width*1.5/4):
+                    with dpg.plot(label='Plot', height=-1, width=-1) as plot_id:
+                        self.x_axis = dpg.add_plot_axis(dpg.mvXAxis, label="")
+                        self.y_axis = dpg.add_plot_axis(dpg.mvYAxis, label="")
+                        dpg.set_axis_limits_auto(self.x_axis)
+                        dpg.set_axis_limits_auto(self.y_axis)
                 
+                with dpg.child_window(width = window_width*1.5/4) as control_panel:
+                    def scale_slider_update(sender, app_data,user_data):
+                        self.scale = app_data
+                        dpg.fit_axis_data(self.y_axis)
+                        
+                    dpg.add_slider_float(label='Scale slider', width=window_width/4,
+                                                max_value=100, default_value=20, callback=scale_slider_update)
+                    
 
-            
+                    self.control_panel = control_panel
 
     def update(self, messages: List[Message]):
         # message data format time x channel
