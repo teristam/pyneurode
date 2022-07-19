@@ -133,7 +133,9 @@ class TuningCurveVisualizer(AnalogVisualizer):
         self.log(logging.DEBUG, self.series_name)
         
         #Create subplot for each of the selected cells
-        with dpg.subplots(sum(self.selected_cells), 1, parent=self.plot_panel, width=-1,height=-1) as subplots:
+        ncol = 3
+        nrow = np.ceil(sum(self.selected_cells)/ncol)
+        with dpg.subplots(nrow, ncol, parent=self.plot_panel, width=-1,height=-1) as subplots:
             self.subplots = subplots
             for i,is_selected in enumerate(self.selected_cells):
                 if is_selected: # if the cell is selected
