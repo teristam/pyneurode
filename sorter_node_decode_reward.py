@@ -16,6 +16,7 @@ from pyneurode.processor_node.AnalogVisualizer import *
 from pyneurode.processor_node.SpikeClusterVisualizer import SpikeClusterVisualizer
 from pyneurode.processor_node.LatencyVisualizer import LatencyVisualizer
 from pyneurode.processor_node.TemplateMatchProcessor import TemplateMatchProcessor
+from pyneurode.processor_node.TuningCurveVisualizer import TuningCurveVisualizer
 from pyneurode.processor_node.ZmqPublisherSink import ZmqMessage, ZmqPublisherSink
 from pyneurode.processor_node.ZmqSource import ZmqSource
 import time 
@@ -46,17 +47,17 @@ if  __name__ == '__main__':
         #TODO: need some way to query the output type of processor easily
 
         # reading too fast may overflow the pipe
-        # zmqSource = FileEchoSource(interval=0.05, filename='data/M8_test_20220704_123528_packets.pkl', 
+        # zmqSource = FileEchoSource(interval=0.01, filename='E:\decoder_test_data\M7_2022-07-16_17-17-33_test1\M7_test1_20220716_171720_305e71_packets.pkl', 
         #                         filetype='message',batch_size=3)
-        zmqSource = FileEchoSource(interval=0.01, filename='E:\decoder_test_data\M7_2022-07-13_12-17-06_test3\M7_test3_20220713_121658_24062b_packets.pkl', 
-                                filetype='message',batch_size=3)
         
-        # zmqSource = ZmqSource(adc_channel=20,time_bin = 0.01)
+        zmqSource = ZmqSource(adc_channel=20,time_bin = 0.01)
         templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,min_num_spikes=2000,training_period=None)
         templateMatchProcessor = TemplateMatchProcessor(interval=0.01,time_bin=0.01)
         syncDataProcessor = SyncDataProcessor(interval=0.02)
         gui = GUIProcessor(internal_buffer_size=5000)
         analogControl = AnalogTriggerControl("Trigger control", message2send=msg, hysteresis=1)
+        visualizer = TuningCurveVisualizer('Tuning curves', x_variable_idx = -1, nbin=100, bin_size=2.7/100, buffer_length=6000)
+
 
         spike2arduino = Spike2ArduinoTriggerProcessor([0,1,2,3,4,5], [13,12,11,10,9,8])
         arduinoSink = ArduinoTriggerSink("COM4")
@@ -97,5 +98,6 @@ if  __name__ == '__main__':
         gui.register_visualizer(cluster_vis, filters=['df_sort'])
         gui.register_visualizer(latency_vis, filters=['metrics'])
         gui.register_visualizer(analogControl, filters=['synced_data'], control_targets=[zmqPublisherSink])
+        gui.register_visualizer(visualizer=visualizer, filters=['synced_data'])
 
         ctx.start()
