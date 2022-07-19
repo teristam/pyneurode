@@ -27,7 +27,7 @@ class TuningCurveEstimator():
         """
         x = x//self.bin_size
         
-        assert np.max(x) < self.nbin, 'The large data exceed the number of bin'
+        # assert np.max(x) < self.nbin, 'The large data exceed the number of bin'
         assert len(x) == len(y), 'Length of two inputs must be the same'
         
         if self.tuning_curve is None:
