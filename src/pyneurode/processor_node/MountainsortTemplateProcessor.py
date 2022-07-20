@@ -18,14 +18,6 @@ from pyneurode.processor_node.Message import Message, MetricsMessage
 import pyneurode.utils
 import warnings
 
-def collect_spikes(spike_queue:Queue,spike_data):
-    print('Collect spikes starting...')
-    # collect the spikes from message passing and store it locally
-    while True:
-        try:
-            spike_data.append(spike_queue.get(block=True,timeout=0.001))
-        except Empty:
-            continue
 
 class SpikeTemplateMessage(Message):
     type = 'spike_template_message'
@@ -60,19 +52,22 @@ class MountainsortTemplateProcessor(BatchProcessor):
         self.pca_component = 3
         self.last_sort_time = None # time since last template computation
 
-        # self.collect_spike_thread = threading.Thread(target=collect_spikes, args=(self.in_queue,self.spike_data))
-        # self.collect_spike_thread.start()
 
     # @profile_cProfile()
     def run(self):
         return super().run()
 
-    def __init__(self, interval=None, internal_buffer_size=1000, min_num_spikes=2000, do_pca=True, training_period=None):
+    def __init__(self, interval=None, internal_buffer_size=1000, min_num_spikes=2000, max_spikes= None, do_pca=True, training_period=None):
         super().__init__(interval=interval, internal_buffer_size=internal_buffer_size)
         self.MIN_NUM_SPIKE = min_num_spikes
         self.do_pca = do_pca
         self.training_period = training_period # the period at which the spike template will be recompute, in second
         self.prev_metrics_time = time.time()
+        
+        if max_spikes is None: # the maximum number of spikes that will be stored internally
+            self.max_spikes = min_num_spikes * 10
+        else:
+            self.max_spikes = max_spikes
  
     def process(self, msgs):
         # each time, it will load multiple message
@@ -89,8 +84,11 @@ class MountainsortTemplateProcessor(BatchProcessor):
             elif m.type == 'spike':
                 data.append(m.data)
         
-        self.spike_data = self.spike_data + data # TODO: possible performance regresssion here, as the list is growing every loop
+        self.spike_data = self.spike_data + data 
 
+        if len(self.spike_data) > self.max_spikes:
+            self.spike_data  = self.spike_data[-self.max_spikes:]
+        
 
         if self.spike_print_counter != len(self.spike_data)//500:
             self.spike_print_counter = len(self.spike_data)//500
