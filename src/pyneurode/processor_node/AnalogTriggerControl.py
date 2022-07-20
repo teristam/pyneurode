@@ -147,8 +147,19 @@ class AnalogTriggerControl(Visualizer):
                     assert i < data.shape[1], f'data size is too small: i: {i}  data shape: {data.shape}'
                     assert i < len(self.threshold_sliders), 'too few threshold slider'
                     
-                    if np.max(data[:,i]) > dpg.get_value(self.threshold_sliders[i]):
+                    threshold_value = dpg.get_value(self.threshold_sliders[i])
+                    if np.max(data[:,i]) > threshold_value:
                         if (time.time() - self.last_trigger_time) > self.hysteresis:
+                            
+                            # inject the threshold and cell information into the message
+                            if type(self.message.data) is dict:
+                                self.message.data.update(
+                                    {
+                                        'threshold':threshold_value,
+                                        'channel': i
+                                    }
+                                )
+                                self.message.timestamp = time.time()
                             #avoid sending too many messages
                             self.send_control_msg(self.message)
                             self.last_trigger_time = time.time()

@@ -71,7 +71,8 @@ class GUIProcessor(BatchProcessor):
                 control_targets = [control_targets]
             # Connect where the message from visualizer should send to 
             for target in control_targets:
-                self.control_targets[visualizer] = []
+                if not visualizer in self.control_targets:
+                    self.control_targets[visualizer] = []
                 self.control_targets[visualizer].append(target)
                 self.connect(target) # enable sending of messaging to the target processor
 

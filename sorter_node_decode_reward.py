@@ -55,7 +55,7 @@ if  __name__ == '__main__':
         templateMatchProcessor = TemplateMatchProcessor(interval=0.01,time_bin=0.01)
         syncDataProcessor = SyncDataProcessor(interval=0.02)
         gui = GUIProcessor(internal_buffer_size=5000)
-        analogControl = AnalogTriggerControl("Trigger control", message2send=msg, hysteresis=1)
+        analogControl = AnalogTriggerControl("Trigger control", message2send=msg, hysteresis=4)
         visualizer = TuningCurveVisualizer('Tuning curves', x_variable_idx = -1, nbin=100, bin_size=2.7/100, buffer_length=6000)
 
 
@@ -97,7 +97,7 @@ if  __name__ == '__main__':
         gui.register_visualizer(pos_visualizer, filters=['adc_data'])
         gui.register_visualizer(cluster_vis, filters=['df_sort'])
         gui.register_visualizer(latency_vis, filters=['metrics'])
-        gui.register_visualizer(analogControl, filters=['synced_data'], control_targets=[zmqPublisherSink])
+        gui.register_visualizer(analogControl, filters=['synced_data'], control_targets=[zmqPublisherSink, filesave])
         gui.register_visualizer(visualizer=visualizer, filters=['synced_data'])
 
         ctx.start()
