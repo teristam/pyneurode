@@ -47,11 +47,12 @@ if  __name__ == '__main__':
         #TODO: need some way to query the output type of processor easily
 
         # reading too fast may overflow the pipe
-        # zmqSource = FileEchoSource(interval=0.01, filename='E:\decoder_test_data\M7_2022-07-16_17-17-33_test1\M7_test1_20220716_171720_305e71_packets.pkl', 
+        # zmqSource = FileEchoSource(interval=0.01, filename='data/M7_test1_20220725_154822_b68d06_packets.pkl', 
         #                         filetype='message',batch_size=3)
         
         zmqSource = ZmqSource(adc_channel=20,time_bin = 0.01)
-        templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,min_num_spikes=2000,training_period=None)
+        templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,
+                min_num_spikes=20000, calibration_time = 60*2, training_period=None)
         templateMatchProcessor = TemplateMatchProcessor(interval=0.01,time_bin=0.01)
         syncDataProcessor = SyncDataProcessor(interval=0.02)
         gui = GUIProcessor(internal_buffer_size=5000)

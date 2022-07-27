@@ -57,12 +57,15 @@ class MountainsortTemplateProcessor(BatchProcessor):
     def run(self):
         return super().run()
 
-    def __init__(self, interval=None, internal_buffer_size=1000, min_num_spikes=2000, max_spikes= None, do_pca=True, training_period=None):
+    def __init__(self, interval=None, internal_buffer_size=1000, min_num_spikes=2000, 
+            max_spikes= None, do_pca=True, training_period=None, calibration_time=None):
         super().__init__(interval=interval, internal_buffer_size=internal_buffer_size)
         self.MIN_NUM_SPIKE = min_num_spikes
         self.do_pca = do_pca
         self.training_period = training_period # the period at which the spike template will be recompute, in second
         self.prev_metrics_time = time.time()
+        self.calibration_time = calibration_time
+        self.start_time = time.time()
         
         if max_spikes is None: # the maximum number of spikes that will be stored internally
             self.max_spikes = min_num_spikes * 10
@@ -96,8 +99,17 @@ class MountainsortTemplateProcessor(BatchProcessor):
 
         # Cluster to find templates
         if self.last_sort_time is None:
-            if (len(self.spike_data)>(self.spike_len_prev+self.MIN_NUM_SPIKE)):
-                need_sort = True
+            #only sort once
+
+            if self.calibration_time is not None:
+                #sort when enough time has passed
+                if (time.time() - self.start_time) > self.calibration_time:
+                    need_sort = True
+                    self.log(logging.INFO, 'Enough time has passed. Start to calculate template')
+            else:
+                if (len(self.spike_data)>(self.spike_len_prev+self.MIN_NUM_SPIKE)):
+                    need_sort = True
+      
         else:
             if (self.training_period is not None) and (time.time()-self.last_sort_time)>self.training_period:
                 need_sort = True
