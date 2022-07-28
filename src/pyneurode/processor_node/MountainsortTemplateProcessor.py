@@ -51,6 +51,7 @@ class MountainsortTemplateProcessor(BatchProcessor):
         self.spike_print_counter = 0
         self.pca_component = 3
         self.last_sort_time = None # time since last template computation
+        self.start_time = time.time()
 
 
     # @profile_cProfile()
@@ -65,8 +66,7 @@ class MountainsortTemplateProcessor(BatchProcessor):
         self.training_period = training_period # the period at which the spike template will be recompute, in second
         self.prev_metrics_time = time.time()
         self.calibration_time = calibration_time
-        self.start_time = time.time()
-        
+                
         if max_spikes is None: # the maximum number of spikes that will be stored internally
             self.max_spikes = min_num_spikes * 10
         else:
