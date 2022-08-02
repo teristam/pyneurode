@@ -245,6 +245,9 @@ def checkDupliate(x):
     if len(dup_val)>0:
         return x[x[:,0]==dup_val[0]]
 
+def train_gmm(pc_norm, df):
+    # train gmm based on isosplit results
+    pass
 
 def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1, pca_component=6, verbose=False):
     elect_ids = df.electrode_ids.unique()
@@ -259,9 +262,12 @@ def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1,
     #make pca columns
     for i in range(pca_component):
         df[f'PC{i}'] = np.nan
+        
+    df['pc_norm'] = np.zeros((len(df),pca_component)).tolist()
 
     pca_transformers = {}
     standard_scalers = {}
+    pc_norm_list = []
 
     for e_ids in elect_ids:
         if verbose:
@@ -278,11 +284,18 @@ def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1,
         labels,pc_norm,pca_transformer,standard_scaler = sort_spikes(spike_waveforms,eps=eps, pca_component=pca_component)
         pca_transformers[e_ids] = pca_transformer
         standard_scalers[e_ids] = standard_scaler
+        
         #
         if labels is not None:
             df.loc[df.electrode_ids==e_ids,'cluster_id'] = [int((e_ids+1)*100 +(l+1)) for l in labels] #make unique id for each electrode
         else:
            df.loc[df.electrode_ids==e_ids,'cluster_id'] = -1
+        
+        # Need to make an array of list, so that we can assign it to the dataframe column
+        pc_norm_list = np.empty(pc_norm.shape[0], dtype=object)
+        pc_norm_list[:] = pc_norm.tolist()
+        
+        df.loc[df.electrode_ids==e_ids,'pc_norm'] = pc_norm_list
 
     return df, pca_transformers,standard_scalers
 

@@ -123,7 +123,7 @@ class MountainsortTemplateProcessor(BatchProcessor):
             df = makeSpikeDataframe(spike2sort)
 
 
-            df, pca_transformers,standard_scalers = sort_all_electrodes(df, pca_component=3) #sort spikes
+            df, pca_transformers,standard_scalers, pc_norm = sort_all_electrodes(df, pca_component=3) #sort spikes
 
             (templates, template_cluster_id, template_electrode_id) = generate_spike_templates(df)
             print(template_cluster_id)
