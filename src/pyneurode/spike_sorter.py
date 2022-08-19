@@ -17,6 +17,7 @@ from isosplit5 import isosplit5
 from scipy import spatial
 import warnings
 from .spike_sorter_cy import align_spike_cy
+from scipy import stats
 
 def sort_spikes(spike_waveforms, eps=1,pca_component=6, min_samples=5,clusterMethod=None):
     start = time.time()
@@ -67,7 +68,38 @@ def generate_spike_templates(df):
     # template_cluster_id contains the cluster_id for each template
     templates,template_cluster_id = calculate_spike_template(spike_waveforms,cluster_id)
     template_electrode_id = np.array([int(cluster_electrode_ids[i]) for i in template_cluster_id]) #which electrode the template are from
-    return (templates, template_cluster_id, template_electrode_id)
+    
+    # build model for distance
+    models = estimate_distance_model(templates, template_cluster_id, spike_waveforms, cluster_id)
+    
+    return (templates, template_cluster_id, template_electrode_id, models)
+
+def estimate_distance_model(templates, template_cluster_id, spike_waveform_aligned, cluster_ids, metric='mse'):
+    '''
+    Build a normal distribution for each cluster
+    '''
+    
+    
+    cluster_dist = []
+    for i,tid in enumerate(template_cluster_id):
+        
+        spike_waveform = spike_waveform_aligned[cluster_ids==template_cluster_id[i]]
+        
+        assert spike_waveform.shape[0] > 0
+                
+        if metric=='mse':
+            d = np.mean((spike_waveform - templates[i,:])**2,axis=1) # MSE is equivalent to Euclidean distance
+        else:     
+            d = spatial.distance.cdist(spike_waveform, templates[[i],:], metric='cosine') #to keep 2D dimension
+                
+
+        # Fit normal distribution
+        mean = np.mean(d)
+        std = np.std(d)
+        cluster_dist.append({'mean':mean, 'std':std})
+        
+    return cluster_dist
+        
 
 def calculate_spike_template(spike_waveforms, cluster_ids):
     # Calculate the templates for neurons
@@ -83,25 +115,42 @@ def calculate_spike_template(spike_waveforms, cluster_ids):
     return template, label_unique
 
 
-def template_matching(templates, spike_waveform,metrics='mse', calculate_norm_dist=True):
+def guassmf(x, mean, sigma):
+    # Guassian membership function to estimate the probability
+    
+    return np.exp(-((x-mean)**2) / sigma**2)
+
+def template_matching(templates, spike_waveform,metrics='mse', dist_model=None, dist_threshold=0.05, 
+                      return_prob=True):
     # Match a spike waveform to template
     # return the index of minimum template, as well as the distance
     # TODO: reject outliner
+    
+    
+    if dist_model is not None:
+        assert len(templates) == len(dist_model)
 
     if metrics=='mse':
         d = np.mean((spike_waveform - templates)**2,axis=1) # MSE is equivalent to Euclidean distance
     else:
-        d= np.zeros((templates.shape[0],))
-        for i in range(templates.shape[0]):
-            d[i] = spatial.distance.cosine(spike_waveform, templates[i,:])
+     
+        d = spatial.distance.cdist(spike_waveform, templates, metric='cosine')
 
     # d = np.sum(spike_waveform*templates)
     idx = np.argmin(d)
-
-    if calculate_norm_dist:
-        dist = np.min(d)
-        norm_dist = dist/np.std(spike_waveform)
-        return idx, norm_dist
+    min_d = np.min(d)
+    
+    prob = None
+    
+    # check the probability
+    if dist_model is not None:
+        prob = guassmf(min_d, dist_model[idx]['mean'], dist_model[idx]['std'])
+        if prob<dist_threshold:
+            # distance outside range
+            idx = -1 # mark as outliner
+            
+    if return_prob:
+        return idx, prob
     else:
         return idx
 
@@ -245,9 +294,6 @@ def checkDupliate(x):
     if len(dup_val)>0:
         return x[x[:,0]==dup_val[0]]
 
-def train_gmm(pc_norm, df):
-    # train gmm based on isosplit results
-    pass
 
 def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1, pca_component=6, verbose=False):
     elect_ids = df.electrode_ids.unique()
@@ -300,7 +346,8 @@ def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1,
     return df, pca_transformers,standard_scalers
 
 
-def sort_spike_row(row, templates, template_cluster_id, template_electrode_id, pca_transformers, standard_scalers):
+def sort_spike_row(row, templates, template_cluster_id, template_electrode_id, pca_transformers, standard_scalers, 
+                   dist_model=None, dist_threshold = 0.05):
     # print(row)
     t = time.perf_counter()
     spike = row.spike_waveform
@@ -308,10 +355,17 @@ def sort_spike_row(row, templates, template_cluster_id, template_electrode_id, p
     spike = align_spike(spike)
     aligned_waveform = spike.squeeze()
     neigbour_idx = np.where(template_electrode_id == electrode_id)[0] # do sorting independently for each electrode
-
+    dist_model_neighbour = [dist_model[i] for i in neigbour_idx]
+    
     if len(neigbour_idx) > 0:
-        idx = template_matching(templates[neigbour_idx,:], spike, calculate_norm_dist=False)
-        labels_template = template_cluster_id[neigbour_idx[idx]]
+        idx, prob = template_matching(templates[neigbour_idx,:], spike, dist_model=dist_model_neighbour,
+                                dist_threshold=dist_threshold,
+                                return_prob=True)
+        if idx>=0:
+            labels_template = template_cluster_id[neigbour_idx[idx]]
+        else:
+            #outliner
+            labels_template = '-1'
     else:
         # no template found for a particular electrode
         # make them unclassified
@@ -330,16 +384,18 @@ def sort_spike_row(row, templates, template_cluster_id, template_electrode_id, p
             
            
 
-    return labels_template,aligned_waveform, time.perf_counter() - t, pc_norm
+    return labels_template,aligned_waveform, time.perf_counter() - t, pc_norm, prob
 
-def template_match_all_electrodes_fast(df, templates, template_electrode_id,template_cluster_id, pca_transformers=None, standard_scalers=None):
+def template_match_all_electrodes_fast(df, templates, template_electrode_id,template_cluster_id,
+                                       dist_model=None, dist_threshold=0.05,
+                                       pca_transformers=None, standard_scalers=None):
     ''' 
     Match input spike wavefrom to the closest template, matching is done on each tetrode independently
     '''
     # apply is faster than iterrows()
     results = df.apply(sort_spike_row,axis=1, 
-        args=(templates, template_cluster_id, template_electrode_id, pca_transformers, standard_scalers), result_type='expand')
-    df[['cluster_id', 'spike_waveform_aligned','sorting_time', 'pc_norm']] = results
+        args=(templates, template_cluster_id, template_electrode_id, pca_transformers, standard_scalers, dist_model, dist_threshold), result_type='expand')
+    df[['cluster_id', 'spike_waveform_aligned','sorting_time', 'pc_norm', 'prob']] = results
 
     df.cluster_id = df.cluster_id.astype(int)
 
