@@ -326,7 +326,9 @@ def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1,
             spike_waveforms = np.stack(df_elec.spike_waveform_aligned.values)
         else:
             spike_waveforms = np.stack(df_elec.spike_waveform.values)
+            
         # sort spikes
+        print(spike_waveforms.shape)
         labels,pc_norm,pca_transformer,standard_scaler = sort_spikes(spike_waveforms,eps=eps, pca_component=pca_component)
         pca_transformers[e_ids] = pca_transformer
         standard_scalers[e_ids] = standard_scaler
@@ -338,10 +340,14 @@ def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1,
            df.loc[df.electrode_ids==e_ids,'cluster_id'] = -1
         
         # Need to make an array of list, so that we can assign it to the dataframe column
-        pc_norm_list = np.empty(pc_norm.shape[0], dtype=object)
-        pc_norm_list[:] = pc_norm.tolist()
+        if pc_norm is not None:
+            # sometimes there may not be enough spike to calcualte the PCA
+            pc_norm_list = np.empty(pc_norm.shape[0], dtype=object)
+            pc_norm_list[:] = pc_norm.tolist()
+            df.loc[df.electrode_ids==e_ids,'pc_norm'] = pc_norm_list
         
-        df.loc[df.electrode_ids==e_ids,'pc_norm'] = pc_norm_list
+        assert np.all([len(df.iloc[i].pc_norm)==pca_component for i in range(len(df))])
+            
 
     return df, pca_transformers,standard_scalers
 
@@ -370,6 +376,7 @@ def sort_spike_row(row, templates, template_cluster_id, template_electrode_id, p
         # no template found for a particular electrode
         # make them unclassified
         labels_template = '-1'
+        prob = 0
 
     if pca_transformers is not None:
         #Also do the PCA transform for monitoring purpose

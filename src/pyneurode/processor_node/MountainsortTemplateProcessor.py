@@ -21,13 +21,14 @@ import warnings
 
 class SpikeTemplateMessage(Message):
     type = 'spike_template_message'
-    def __init__(self, templates, template_cluster_id, template_electrode_id,pca_transformers=None, standard_scalers=None):
+    def __init__(self, templates, template_cluster_id, template_electrode_id,pca_transformers=None, standard_scalers=None, membership_model=None):
         self.data = {
             'templates':templates,
             'template_cluster_id': template_cluster_id,
             'template_electrode_id': template_electrode_id,
             'pca_transformer': pca_transformers,
-            'standard_scalers': standard_scalers
+            'standard_scalers': standard_scalers,
+            'membership_models': membership_model
         }
         
 class RecomputeTemplateControlMessage(Message):
@@ -123,9 +124,9 @@ class MountainsortTemplateProcessor(BatchProcessor):
             df = makeSpikeDataframe(spike2sort)
 
 
-            df, pca_transformers,standard_scalers, pc_norm = sort_all_electrodes(df, pca_component=3) #sort spikes
+            df, pca_transformers,standard_scalers = sort_all_electrodes(df, pca_component=3) #sort spikes
 
-            (templates, template_cluster_id, template_electrode_id) = generate_spike_templates(df)
+            (templates, template_cluster_id, template_electrode_id, models) = generate_spike_templates(df)
             print(template_cluster_id)
 
             # Some book keeping
@@ -141,7 +142,8 @@ class MountainsortTemplateProcessor(BatchProcessor):
                 template_cluster_id,
                 template_electrode_id,
                 pca_transformers,
-                standard_scalers
+                standard_scalers,
+                models
             )
             
             return msg

@@ -155,13 +155,14 @@ class SpikeClusterVisualizer(Visualizer):
     def drawPCA(self):
         cluster2plot = dpg.get_value(self.list_box) #will return a string
         tetrode = int(cluster2plot)//100 # cluster id is in the form 201, 202 etc, where n%100 is the channel
-        cur_tetrode_cluster = [c for c in self.cluster_list if c//100==tetrode] #find the cluster id for current tetrode
+        cur_tetrode_cluster = [c for c in self.cluster_list if (c//100==tetrode) and c>0] #find the cluster id for current tetrode, skip the noise class
 
         for i,cid in enumerate(cur_tetrode_cluster):
             df_sel = self.df_sort[self.df_sort.cluster_id == cid]
 
             if len(df_sel)>0:
                 if 'pc_norm' in df_sel.columns:
+                    # print(df_sel[['pc_norm','cluster_id']])
                     pc_norm = np.stack(df_sel.pc_norm.to_numpy())
                     if pc_norm[0] is not None:
                         x = pc_norm[:,0].tolist()

@@ -76,6 +76,7 @@ class TemplateMatchProcessor(BatchProcessor):
                 self.template_electrode_id = m.data['template_electrode_id']
                 self.pca_transformers = m.data['pca_transformer']
                 self.standard_scalers = m.data['standard_scalers']
+                self.membership_models = m.data['membership_models']
                 self.buffer_is_valid = False # refresh the buffer
                 self.template_update_id += 1
             elif m.type == 'spike':
@@ -96,7 +97,7 @@ class TemplateMatchProcessor(BatchProcessor):
             #TODO: selectively do PCA on some of the channels only
             if self.do_pca:
                 self.df_sort = template_match_all_electrodes_fast(self.df_sort, self.templates, 
-                        self.template_electrode_id, self.template_cluster_id, self.pca_transformers, self.standard_scalers)
+                        self.template_electrode_id, self.template_cluster_id, self.membership_models, 0.05, self.pca_transformers, self.standard_scalers)
             else:
                 self.df_sort = template_match_all_electrodes_cy(self.df_sort, self.templates, 
                         self.template_electrode_id, self.template_cluster_id)
@@ -122,8 +123,8 @@ class TemplateMatchProcessor(BatchProcessor):
             spk_train, skp_time_event=sort2spiketrain(self.template_cluster_id, self.df_sort.cluster_id, self.df_sort.spike_time, bins)
             total_spikes = np.sum(spk_train[:])
             # print(df_sort)
-            if not total_spikes == len(self.df_sort):
-                warnings.warn(f'Some spikes are omitted spike_train {total_spikes} df_sort {len(self.df_sort)}') #make sure all spikes are included
+            # if not total_spikes == len(self.df_sort):
+            #     warnings.warn(f'Some spikes are omitted spike_train {total_spikes} df_sort {len(self.df_sort)}') #make sure all spikes are included
 
             self.time_bin_start = bins[-1] #update the start of the bin
 
