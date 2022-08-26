@@ -346,7 +346,7 @@ def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1,
             pc_norm_list[:] = pc_norm.tolist()
             df.loc[df.electrode_ids==e_ids,'pc_norm'] = pc_norm_list
         
-        assert np.all([len(df.iloc[i].pc_norm)==pca_component for i in range(len(df))])
+        # assert np.all([len(df.iloc[i].pc_norm)==pca_component for i in range(len(df))])
             
 
     return df, pca_transformers,standard_scalers
