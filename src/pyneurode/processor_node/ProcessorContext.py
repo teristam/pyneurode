@@ -27,12 +27,13 @@ class ProcessorContext(Context):
     # a class for managing all the subprocesses
     # it should also manage the various queues of the subprocess to connect them to each other
         
-    def __init__(self):
+    def __init__(self, auto_start=True):
         self.log = functools.partial(logger, 'ProcessorContext')
         self.shutdown_event = mp.Event()
-        self.processors:list[Processor] = {}
+        self.processors:dict = {}
         self.links = []
         self.subprocs = []
+        self.auto_start = True
 
     def register_processors(self, *args:Processor):
         # register and initialize the processor
@@ -50,6 +51,12 @@ class ProcessorContext(Context):
             p = mp.Process(target = process_run_wrapper, args=(proc,), name = proc.proc_name )
             p.start()
             self.subprocs.append(p)
+            
+    
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        super().__exit__(exc_type, exc_value, exc_tb)
+        if self.auto_start:
+            self.start()
 
 
 

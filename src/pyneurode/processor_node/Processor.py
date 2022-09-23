@@ -44,7 +44,7 @@ class Channel:
     A class that manage the connection between two Processors
     It will only allows  message types that match with the filter to pass through
     '''
-    def __init__(self, queue:Queue, filters:list=None):
+    def __init__(self, queue:Queue, filters:Union[List[str],List[Message]]=None):
         self.queue = queue
         self.filters = filters
         self.filters = filters
@@ -177,7 +177,16 @@ class Processor(Context):
                     self.send(processed_data)
             except Empty: #if timeout
                 continue
-
+    
+    def get_IOspecs(self) -> Tuple[List[Message], List[Message]]:
+        """return a tuple ([input message], [output message]) with the Message type that this processor is expected to
+        receive and produce respectively
+        """
+        
+        return (
+            [Message],
+            [Message]
+        )
 
     def _process(self, message=None):
         # also monitor the processing time
@@ -257,7 +266,7 @@ class TimeSource(Source):
     '''
     TimeSource: a Source that trigger an event in a given interval
     '''
-    def __init__(self, interval):
+    def __init__(self, interval:float):
         super().__init__()
         self.interval = interval
         self.end_time = None
@@ -291,7 +300,7 @@ class SineTimeSource(TimeSource):
     '''
     A TimeSource that generate multi-channel sine wave for debugging purpose
     '''
-    def __init__(self, interval,frequency, channel_num, sampling_frequency=100, noise_std=0):
+    def __init__(self, interval:float, frequency:float, channel_num:int, sampling_frequency:int=100, noise_std:float=0):
         super().__init__(interval)
         self.frequency = frequency #in Hz
         self.start_time = time.time()
@@ -356,7 +365,7 @@ class AddProcessor(Processor):
         return Message('dummy',msg.data + 100)
     
 class ScaleProcessor(Processor):
-    def __init__(self, a, b):
+    def __init__(self, a:float, b:float):
         super().__init__()
         self.a = a
         self.b = b
