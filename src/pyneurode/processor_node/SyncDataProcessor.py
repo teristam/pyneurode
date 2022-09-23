@@ -20,7 +20,7 @@ class SyncDataProcessor(BatchProcessor):
     Synchronize two sources of time series data
     '''
     
-    def __init__(self, interval=0.001, internal_buffer_size=10000, ignore_adc=False, verbose=True):
+    def __init__(self, interval=0.001, internal_buffer_size=10000, ignore_adc:bool=False, verbose=True):
         super().__init__(interval, internal_buffer_size, verbose)
         self.ignore_adc = ignore_adc # whether to ignore ADC signal, mainly used for debugging
     

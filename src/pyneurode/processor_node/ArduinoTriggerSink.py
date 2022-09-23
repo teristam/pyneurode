@@ -14,7 +14,7 @@ class ArduinoTriggerSink(Sink):
     Args:
         Sink (_type_): _description_
     """
-    def __init__(self, port, baudrate = 115200):
+    def __init__(self, port:str, baudrate:int = 115200):
         """Constructor
 
         Args:

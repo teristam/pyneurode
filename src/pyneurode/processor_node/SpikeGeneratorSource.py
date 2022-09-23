@@ -35,7 +35,7 @@ class SpikeGeneratorSource(TimeSource):
     """This source generate spikes for testing. The spike train follows a poison distribution
     """
 
-    def __init__(self,neurons:List[List[SimulatedNeuron]], time_step:int = 100, Fs:int=30000, amp_mod_level=0.5):
+    def __init__(self,neurons:List[List[SimulatedNeuron]], time_step:int = 100, Fs:int=30000, amp_mod_level:float=0.5):
         super().__init__(1/time_step)
         self.num_electrode = len(neurons)
         self.neurons = neurons

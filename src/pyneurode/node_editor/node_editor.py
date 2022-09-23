@@ -2,6 +2,7 @@ import dearpygui.dearpygui as dpg
 from pyneurode.processor_node.Processor import *
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 import inspect 
+import logging
 
 def make_node(processor:Processor) -> Tuple[Dict, Dict]:
     '''
@@ -9,9 +10,12 @@ def make_node(processor:Processor) -> Tuple[Dict, Dict]:
     '''
     with dpg.node(label=processor.proc_name):
         sig = inspect.signature(processor.__init__)
-        
+        # logging.debug(f'{processor.proc_name}: {sig}')
+
         input_cls, output_cls = processor.get_IOspecs()
         
+        # logging.debug(f'{processor.proc_name}: {input_cls} {output_cls}')
+
         
         # Add input and output nodes
         inputs = {}
@@ -34,11 +38,17 @@ def make_node(processor:Processor) -> Tuple[Dict, Dict]:
                 
         
         for param in sig.parameters.keys():
+            print(param,sig.parameters[param].annotation )
             with dpg.node_attribute(label=processor.proc_name, attribute_type=dpg.mvNode_Attr_Static): #static attribute
-                if sig.parameters[param].annotation == 'float':
+                annotation = sig.parameters[param].annotation
+                if annotation is float:
                     dpg.add_input_float(label=param, width = 150)
-                elif sig.parameters[param].annotation == 'int':
+                elif annotation is int:
                     dpg.add_input_int(label=param, width = 150)
+                elif annotation is bool:
+                    dpg.add_checkbox(label=param)
+                elif annotation is str:
+                    dpg.add_input_text(label=param, width=120)
                     
         return inputs, outputs
                     

@@ -57,7 +57,7 @@ class TemplateMatchProcessor(BatchProcessor):
     def run(self):
         return super().run()
 
-    def __init__(self, interval=None, internal_buffer_size=1000, min_num_spikes=2000, do_pca=True, time_bin=0.1):
+    def __init__(self, interval:float=None, internal_buffer_size:int=1000, min_num_spikes:int=2000, do_pca:bool=True, time_bin:float=0.1):
         super().__init__(interval=interval, internal_buffer_size=internal_buffer_size)
         self.do_pca = do_pca
         self.time_bin = time_bin  #TODO: need to have a setting file to synchronize this time bin between spike and ADC data

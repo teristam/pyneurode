@@ -58,8 +58,8 @@ class MountainsortTemplateProcessor(BatchProcessor):
     def run(self):
         return super().run()
 
-    def __init__(self, interval=None, internal_buffer_size=1000, min_num_spikes=2000, 
-            max_spikes= None, do_pca=True, training_period=None, calibration_time=None):
+    def __init__(self, interval:float=None, internal_buffer_size:int=1000, min_num_spikes:int=2000, 
+            max_spikes:int= None, do_pca:bool=True, training_period:float=None, calibration_time:float=None):
         super().__init__(interval=interval, internal_buffer_size=internal_buffer_size)
         self.MIN_NUM_SPIKE = min_num_spikes
         self.do_pca = do_pca
