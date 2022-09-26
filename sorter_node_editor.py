@@ -11,6 +11,7 @@ import dearpygui.dearpygui as dpg
 from pyneurode.processor_node.AnalogVisualizer import *
 import inspect
 import dearpygui.dearpygui as dpg
+from pyneurode.node_editor import node_editor
 
 dpg.create_context()
 
@@ -84,29 +85,7 @@ if  __name__ == '__main__':
         # ctx.start()
         
         
-        with dpg.window(label="Tutorial", width=1000, height=400):
-            with dpg.node_editor(width=-1, callback=link_callback):
-                nodes = {}
-                # Find all processors in context and build node for them
-                for k,p in ctx.processors.items():
-                    nodes[p.proc_name] = make_node(p)
-                
-                # add in the connection
-                for k, p in ctx.processors.items():
-                    node1 = list(nodes[p.proc_name][1].values())[0]
-
-                    for k in p.out_queues.keys():
-                        node2 = list(nodes[k][0].values())[0]
-                        
-                        dpg.add_node_link(node1,node2)
-                        
-
-      
-        dpg.create_viewport(title='Custom Title', width=800, height=600)
-        dpg.setup_dearpygui()
-        dpg.show_viewport()
-        dpg.start_dearpygui()
-        dpg.destroy_context()
+        node_editor.init_node_editor(ctx)
         
             
 

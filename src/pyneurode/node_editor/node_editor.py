@@ -1,14 +1,17 @@
 import dearpygui.dearpygui as dpg
 from pyneurode.processor_node.Processor import *
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
-import inspect 
+import inspect
+from pyneurode.processor_node.GUIProcessor import GUIProcessor
+import igraph as ig
+ 
 import logging
 
 def make_node(processor:Processor) -> Tuple[Dict, Dict]:
     '''
     Parse the object information and make it into a node
     '''
-    with dpg.node(label=processor.proc_name):
+    with dpg.node(label=processor.proc_name) as node:
         sig = inspect.signature(processor.__init__)
         # logging.debug(f'{processor.proc_name}: {sig}')
 
@@ -50,7 +53,7 @@ def make_node(processor:Processor) -> Tuple[Dict, Dict]:
                 elif annotation is str:
                     dpg.add_input_text(label=param, width=120)
                     
-        return inputs, outputs
+        return inputs, outputs,  node
                     
                     
 def link_callback(sender,app_data):
@@ -64,19 +67,48 @@ def init_node_editor(ctx:ProcessorContext):
     with dpg.window(label="Node editor", width=1000, height=400):
         with dpg.node_editor(width=-1, callback=link_callback):
             nodes = {}
+            nodes_idx = {}
+            idx = 0
             # Find all processors in context and build node for them
             for k,p in ctx.processors.items():
-                nodes[p.proc_name] = make_node(p)
-            
-            # add in the connection
-            for k, p in ctx.processors.items():
-                node_outputs = list(nodes[p.proc_name][1].values())
-
-                for k in p.out_queues.keys():
-                    node_inputs = list(nodes[k][0].values())
+                if not isinstance(p,GUIProcessor): #avoid creating too many connections for GUI
+                    nodes[p.proc_name] = make_node(p)
+                    nodes_idx[p.proc_name] = idx
+                    idx += 1
                     
-                    if node_outputs and node_inputs:
-                        dpg.add_node_link(node_outputs[0], node_inputs[0])
+            edges = [] # buld the node graph for layout later
+
+            # add in the connection
+            for k, p in ctx.processors.items(): #current processor
+                try:
+                    node_outputs = list(nodes[p.proc_name][1].values())
+
+                    for k in p.out_queues.keys(): #name of the target processor
+                        node_inputs = list(nodes[k][0].values())
+                        
+                        if node_outputs and node_inputs:
+                            dpg.add_node_link(node_outputs[0], node_inputs[0])
+                            edges.append([nodes_idx[k], nodes_idx[p.proc_name]])
+                            
+                except KeyError:
+                    pass
+                
+            
+            # Create the graph and generate the best laytout
+            g = ig.Graph(edges, directed=True)
+            layout = g.layout(layout='grid')
+            #shift the pos of nodes so that they always start at 0,0
+            layout = np.array(list(layout))
+            layout -= layout.min(axis=0)
+            layout += 0.2 # padding
+            
+            print(layout)
+            # update the node position with the layout
+            scale = 350
+            for k, v in nodes.items():
+                pos = layout[nodes_idx[k]]
+                dpg.set_item_pos(v[2], pos*scale) #node object
+                
                     
 
     
