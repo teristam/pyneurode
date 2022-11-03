@@ -260,6 +260,8 @@ def makeSpikeDataframe(spikeEvent):
         'timestamps':timestamps,
         'acq_timestamps': acq_timestamps
     })
+    
+    df = df.sort_values('timestamps')
 
     return df 
 
@@ -280,7 +282,7 @@ def makeSpikeTimeCol(spikeLength,spikeN):
 def addAlignedSpike2df(df,channel_per_electrode=4):
     #Aligned spike and add to dataframe
     spike_waveforms = np.stack(df.spike_waveform.values)
-    spike_waveforms = align_spike(spike_waveforms)
+    spike_waveforms = align_spike(spike_waveforms,search_span=5)
     spikeN,spikeLength = spike_waveforms.shape
     df['spike_waveform_aligned'] = spike_waveforms.tolist() #don't create pd.Series first, will lead to bug if df index has duplicates
     df['time_aligned'] = makeSpikeTimeCol(spikeLength,spikeN)
@@ -349,7 +351,6 @@ def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1,
         
         # assert np.all([len(df.iloc[i].pc_norm)==pca_component for i in range(len(df))])
             
-
     return df, pca_transformers,standard_scalers
 
 
@@ -582,7 +583,6 @@ def sort_spikes_online(df_ref, df2sort, eps=1, pca_component=6):
     df_ref = df_ref.copy()
     df2sort = df2sort.copy()
     df_sorted,pca_transformers,standard_scalers = sort_all_electrodes(df_ref, eps=eps, pca_component=pca_component)
-
     # calculate templates
     df_cluster = df_sorted.groupby('cluster_id').mean().reset_index()
     cluster_electrode_ids = dict(zip(df_cluster.cluster_id.values, df_cluster.electrode_ids.values))
