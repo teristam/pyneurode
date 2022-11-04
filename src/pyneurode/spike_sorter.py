@@ -112,6 +112,7 @@ def calculate_spike_template(spike_waveforms, cluster_ids):
     template = np.zeros((len(label_unique), spike_waveforms.shape[1]),dtype=np.float32)
     for i,lbls in enumerate(label_unique):
         template[i,:] =spike_waveforms[cluster_ids==lbls,:].mean(axis=0)
+        # template[i,:] =np.median(spike_waveforms[cluster_ids==lbls,:],axis=0)
 
     return template, label_unique
 
@@ -178,7 +179,7 @@ def align_spike(spikes, chan_per_electrode=4, search_span = 15, pre_peak_span=15
     # ax[1].plot(abs_spike.T)
 
     #Create a mask to restrict the search region
-    # set the signal output the mask to be zero
+    # set the signal outside the mask to be zero
     mask = np.zeros_like(abs_spike)
     search_region = [np.arange(spike_length/2-search_span,spike_length/2+search_span)
         +i*spike_length for i in range(chan_per_electrode) ]
@@ -223,7 +224,7 @@ def align_spike(spikes, chan_per_electrode=4, search_span = 15, pre_peak_span=15
 
         spikes_aligned[i,:] = spk.ravel() #flatten
 
-    return spikes_aligned
+    return spikes_aligned, chan_idx
 
 
 def makeSpikeDataframe(spikeEvent):
@@ -282,11 +283,12 @@ def makeSpikeTimeCol(spikeLength,spikeN):
 def addAlignedSpike2df(df,channel_per_electrode=4):
     #Aligned spike and add to dataframe
     spike_waveforms = np.stack(df.spike_waveform.values)
-    spike_waveforms = align_spike(spike_waveforms,search_span=5)
+    spike_waveforms,peak_chan = align_spike(spike_waveforms,search_span=10)
     spikeN,spikeLength = spike_waveforms.shape
     df['spike_waveform_aligned'] = spike_waveforms.tolist() #don't create pd.Series first, will lead to bug if df index has duplicates
     df['time_aligned'] = makeSpikeTimeCol(spikeLength,spikeN)
     df['channel_ids_aligned'] = makeChannelIdsCol(spikeLength, channel_per_electrode,spikeN)
+    df['peak_chan'] = peak_chan
     # assert False
     return df
 
@@ -477,13 +479,16 @@ def template_match_all_electrodes(df, templates, template_electrode_id, template
     norm_dist_template = []
     aligned_waveforms = []
     pc_norms = []
+    peak_chans = []
 
     for _,row  in df.iterrows():
         # align the spike, separate them into their respective tetrodes
         # then match with templates
         spike = row.spike_waveform
         electrode_id = row.electrode_ids
-        spike = align_spike(spike)
+        spike, peak_chan = align_spike(spike)
+        # print(peak_chan)
+        peak_chans.append(peak_chan[0])
         aligned_waveforms.append(spike.squeeze())
         neigbour_idx = np.where(template_electrode_id == electrode_id)[0] # do sorting independently for each electrode
 
@@ -513,6 +518,8 @@ def template_match_all_electrodes(df, templates, template_electrode_id, template
     df['cluster_id'] = labels_template #make plotting program aware this is a categorical variable
     df['dist_tm'] = norm_dist_template
     df['spike_waveform_aligned'] = aligned_waveforms
+    # print(len(peak_chans))
+    df['peak_chan'] = peak_chans
     if pca_transformers is not None:
         df['pc_norm'] = pc_norms
 
@@ -607,12 +614,12 @@ def sort_spikes_online(df_ref, df2sort, eps=1, pca_component=6):
 
     for e_ids in df_sorted_all.electrode_ids.unique():
         spike_waveforms = np.stack(df_sorted_all[df_sorted_all.electrode_ids==e_ids].spike_waveform.values)
-        spike_waveforms = align_spike(spike_waveforms)
+        spike_waveforms, _ = align_spike(spike_waveforms)
         # print(spike_waveforms.shape)
         pc = pca_transformers[e_ids].transform(spike_waveforms)
         df_sorted_all.loc[df_sorted_all.electrode_ids==e_ids, [f'PC{i}' for i in range(pca_component)]] = pc
 
-    return df_sorted, df_sorted_all,template_cluster_id
+    return df_sorted, df_sorted_all,template_cluster_id, templates
 
 
 
@@ -716,7 +723,7 @@ def detectSpike(data,factor=4, method='median', useAbsoluteThres=False, preSampl
                     
 #                     print(peakIdx)
                     # record down the spike waveform
-                    spikedata = data[electrode:electrode+4, (peakIdx-preSample):(peakIdx+postSample)]
+                    spikedata = data[np.arange(4)+electrode*4, (peakIdx-preSample):(peakIdx+postSample)]
 
                     spikeEvent = SpikeEvent(electrode,peakIdx,spikedata)
                     # if peakIdx<1000:
