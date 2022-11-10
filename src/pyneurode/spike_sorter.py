@@ -31,7 +31,7 @@ def sort_spikes(spike_waveforms, eps=1,pca_component=6, min_samples=5,clusterMet
         pc_norm = standard_scaler.transform(pc) #normalize the pca data
         labels = isosplit5(pc_norm.T)
 
-        print('use normalized pc')
+        # print('use normalized pc')
     else:
         print('Not enough spikse to sort waveform')
         pca_transformer = None
@@ -221,8 +221,13 @@ def align_spike(spikes, chan_per_electrode=4, search_span = 15, pre_peak_span=15
             spk = np.pad(spk, [[0,0],[second_half_length - first_half_length,0]])
 
         spikes_aligned[i,:] = spk.ravel() #flatten
+        
+        
+        #TODO also return the aligned timestamp
 
-    return spikes_aligned
+    aligned_timestamp_delta = idx_rel_chan-spike_length/2
+    
+    return spikes_aligned, aligned_timestamp_delta
 
 
 def makeSpikeDataframe(spikeEvent):
@@ -272,18 +277,19 @@ def makeChannelIdsCol(spikeLength, chan_per_electrode,spikeN):
 def makeSpikeTimeCol(spikeLength,spikeN):
     # make new time col with new spike length
     t = np.arange(spikeLength)
-    t = np.arange(spikeLength)
+    # t = np.arange(spikeLength)
     t = np.tile(t, (spikeN,1))
     return pd.Series(list(t))
 
 def addAlignedSpike2df(df,channel_per_electrode=4):
     #Aligned spike and add to dataframe
     spike_waveforms = np.stack(df.spike_waveform.values)
-    spike_waveforms = align_spike(spike_waveforms)
+    spike_waveforms, aligned_timestamp_delta = align_spike(spike_waveforms)
     spikeN,spikeLength = spike_waveforms.shape
     df['spike_waveform_aligned'] = spike_waveforms.tolist() #don't create pd.Series first, will lead to bug if df index has duplicates
     df['time_aligned'] = makeSpikeTimeCol(spikeLength,spikeN)
     df['channel_ids_aligned'] = makeChannelIdsCol(spikeLength, channel_per_electrode,spikeN)
+    df['timestamp_aligned'] = df['timestamps'] - aligned_timestamp_delta
     # assert False
     return df
 
@@ -328,7 +334,7 @@ def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1,
             spike_waveforms = np.stack(df_elec.spike_waveform.values)
             
         # sort spikes
-        print(spike_waveforms.shape)
+        # print(spike_waveforms.shape)
         labels,pc_norm,pca_transformer,standard_scaler = sort_spikes(spike_waveforms,eps=eps, pca_component=pca_component)
         pca_transformers[e_ids] = pca_transformer
         standard_scalers[e_ids] = standard_scaler
@@ -358,7 +364,7 @@ def sort_spike_row(row, templates, template_cluster_id, template_electrode_id, p
     t = time.perf_counter()
     spike = row.spike_waveform
     electrode_id = row.electrode_ids
-    spike = align_spike(spike)
+    spike, aligned_timestamp_delta = align_spike(spike)
     aligned_waveform = spike.squeeze()
     neigbour_idx = np.where(template_electrode_id == electrode_id)[0] # do sorting independently for each electrode
     dist_model_neighbour = [dist_model[i] for i in neigbour_idx]
@@ -475,15 +481,17 @@ def template_match_all_electrodes(df, templates, template_electrode_id, template
     norm_dist_template = []
     aligned_waveforms = []
     pc_norms = []
+    time_deltas = []
 
     for _,row  in df.iterrows():
         # align the spike, separate them into their respective tetrodes
         # then match with templates
         spike = row.spike_waveform
         electrode_id = row.electrode_ids
-        spike = align_spike(spike)
+        spike, aligned_timestamp_delta = align_spike(spike)
         aligned_waveforms.append(spike.squeeze())
         neigbour_idx = np.where(template_electrode_id == electrode_id)[0] # do sorting independently for each electrode
+        time_deltas.append(aligned_timestamp_delta)
 
         if len(neigbour_idx) > 0:
             idx,norm_dist = template_matching(templates[neigbour_idx,:], spike)
@@ -511,6 +519,7 @@ def template_match_all_electrodes(df, templates, template_electrode_id, template
     df['cluster_id'] = labels_template #make plotting program aware this is a categorical variable
     df['dist_tm'] = norm_dist_template
     df['spike_waveform_aligned'] = aligned_waveforms
+    df['timestamps_aligned'] = df['timestamps'] - np.array(time_deltas)
     if pca_transformers is not None:
         df['pc_norm'] = pc_norms
 
@@ -528,8 +537,8 @@ def sort2spiketrain(unique_cluster_id, cluster_ids, spiketime,bins):
         st = spiketime[cluster_ids==cid]
         spike_time_event.append(st)
         spike_train[i,:] = np.histogram(st,bins)[0]
-        if not spike_train[i,:].sum() == len(st):
-            warnings.warn(f'Some spikes not processed. id: {spike_train[i,:].sum()} vs {len(st)} \n {st} {bins}')
+        # if not spike_train[i,:].sum() == len(st):
+        #     warnings.warn(f'Some spikes not processed. id: {spike_train[i,:].sum()} vs {len(st)} \n {st} {bins}')
 
     return spike_train, spike_time_event
 
@@ -606,7 +615,7 @@ def sort_spikes_online(df_ref, df2sort, eps=1, pca_component=6):
 
     for e_ids in df_sorted_all.electrode_ids.unique():
         spike_waveforms = np.stack(df_sorted_all[df_sorted_all.electrode_ids==e_ids].spike_waveform.values)
-        spike_waveforms = align_spike(spike_waveforms)
+        spike_waveforms,aligned_timestamp_delta = align_spike(spike_waveforms)
         # print(spike_waveforms.shape)
         pc = pca_transformers[e_ids].transform(spike_waveforms)
         df_sorted_all.loc[df_sorted_all.electrode_ids==e_ids, [f'PC{i}' for i in range(pca_component)]] = pc

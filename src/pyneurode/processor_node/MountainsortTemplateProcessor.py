@@ -45,7 +45,8 @@ class MountainsortTemplateProcessor(BatchProcessor):
         super().startup()
 
         # Spawn another thread for receiving the spikes
-        self.spike_data = []
+        # self.spike_data = []
+        self.spike_data = RingBufferG(self.MIN_NUM_SPIKE*10)
         self.spike_print_counter = 0
         self.spike_len_prev = 0
         self.template = None
@@ -53,13 +54,12 @@ class MountainsortTemplateProcessor(BatchProcessor):
         self.pca_component = 3
         self.last_sort_time = None # time since last template computation
 
-
     # @profile_cProfile()
     def run(self):
         return super().run()
 
     def __init__(self, interval:float=None, internal_buffer_size:int=1000, min_num_spikes:int=2000, 
-            max_spikes:int= None, do_pca:bool=True, training_period:float=None, calibration_time:float=None):
+            max_spikes:int= None, do_pca:bool=True, training_period:float=None, calibration_time:float=None, npca=10):
         super().__init__(interval=interval, internal_buffer_size=internal_buffer_size)
         self.MIN_NUM_SPIKE = min_num_spikes
         self.do_pca = do_pca
@@ -67,12 +67,13 @@ class MountainsortTemplateProcessor(BatchProcessor):
         self.prev_metrics_time = time.time()
         self.calibration_time = calibration_time
         self.start_time = time.time()
+        self.npca = npca
         
         if max_spikes is None: # the maximum number of spikes that will be stored internally
             self.max_spikes = min_num_spikes * 10
         else:
             self.max_spikes = max_spikes
- 
+    
     def process(self, msgs):
         # each time, it will load multiple message
         # each message may  contain multiple spikesEvent
@@ -88,17 +89,19 @@ class MountainsortTemplateProcessor(BatchProcessor):
             elif m.type == 'spike':
                 data.append(m.data)
         
-        self.spike_data = self.spike_data + data 
+        # self.spike_data = self.spike_data + data 
 
-        if len(self.spike_data) > self.max_spikes:
-            self.spike_data  = self.spike_data[-self.max_spikes:]
+        # if len(self.spike_data) > self.max_spikes:
+        #     self.spike_data  = self.spike_data[-self.max_spikes:]
+        
+        self.spike_data.write(data)
         
 
         if self.spike_print_counter != len(self.spike_data)//500:
             self.spike_print_counter = len(self.spike_data)//500
             self.log(logging.DEBUG, f'spike length {len(self.spike_data)}')
 
-        # Cluster to find templates
+        # Check if templates need to be retrained
         if self.last_sort_time is None:
             #only sort once
 
@@ -119,12 +122,13 @@ class MountainsortTemplateProcessor(BatchProcessor):
             start_time = time.time()
 
             self.log(logging.DEBUG, 'Computing spike template')
-            spike2sort = self.spike_data.copy() 
+            # spike2sort = self.spike_data.copy()
+            spike2sort = self.spike_data.readAvailable() 
 
             df = makeSpikeDataframe(spike2sort)
 
 
-            df, pca_transformers,standard_scalers = sort_all_electrodes(df, pca_component=3) #sort spikes
+            df, pca_transformers,standard_scalers = sort_all_electrodes(df, pca_component=self.npca) #sort spikes
 
             (templates, template_cluster_id, template_electrode_id, models) = generate_spike_templates(df)
             print(template_cluster_id)
