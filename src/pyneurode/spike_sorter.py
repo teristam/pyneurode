@@ -529,6 +529,7 @@ def template_match_all_electrodes(df, templates, template_electrode_id, template
 def sort2spiketrain(unique_cluster_id, cluster_ids, spiketime,bins):
     #convert sorted clusters to spiketrain
     #TODO: better way to handle channels that has no spikes
+    # output of spiketrain is (neuron x time)
 
     spike_train = np.zeros((len(unique_cluster_id),
         len(bins)-1))

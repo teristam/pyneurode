@@ -530,9 +530,15 @@ def profile_cProfile(output_file=None):
             print(f'profiler output file {_output_file}')
             profiler = cProfile.Profile()
             profiler.enable()
-            func(*args, **kwargs)
-            profiler.disable()
-            profiler.dump_stats(_output_file)
+            try:
+                func(*args, **kwargs)
+            except:
+                pass
+            finally:
+                profiler.disable()
+                profiler.dump_stats(_output_file)
+                print(f'Written profiler data to {_output_file}')
+
         
         return wrapper
 

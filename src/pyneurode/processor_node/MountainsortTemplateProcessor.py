@@ -60,7 +60,7 @@ class MountainsortTemplateProcessor(BatchProcessor):
 
     def __init__(self, interval:float=None, internal_buffer_size:int=1000, min_num_spikes:int=2000, 
             max_spikes:int= None, do_pca:bool=True, training_period:float=None, calibration_time:float=None, npca=10):
-        super().__init__(interval=interval, internal_buffer_size=internal_buffer_size)
+        super().__init__(interval=interval)
         self.MIN_NUM_SPIKE = min_num_spikes
         self.do_pca = do_pca
         self.training_period = training_period # the period at which the spike template will be recompute, in second

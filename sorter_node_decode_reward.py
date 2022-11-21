@@ -50,9 +50,12 @@ if  __name__ == '__main__':
         # zmqSource = FileEchoSource(interval=0.01, filename='data/M7_test1_20220725_154822_b68d06_packets.pkl', 
         #                         filetype='message',batch_size=3)
         
-        zmqSource = ZmqSource(adc_channel=20,time_bin = 0.01)
+        # zmqSource = ZmqSource(adc_channel=20,time_bin = 0.01)
+        zmqSource = FileEchoSource(interval=0.05, filename='E:\decoder_test_data\JM8_2022-09-03_16-57-23_test1\JM8_20220903_165714_9b0440_packets.pkl', 
+                                filetype='message',batch_size=3)
+        
         templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,
-                min_num_spikes=20000, calibration_time = 60*2, training_period=None)
+                min_num_spikes=4000, training_period=None)
         templateMatchProcessor = TemplateMatchProcessor(interval=0.01,time_bin=0.01)
         syncDataProcessor = SyncDataProcessor(interval=0.02)
         gui = GUIProcessor(internal_buffer_size=5000)
