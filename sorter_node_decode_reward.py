@@ -50,9 +50,9 @@ if  __name__ == '__main__':
         # zmqSource = FileEchoSource(interval=0.01, filename='data/M7_test1_20220725_154822_b68d06_packets.pkl', 
         #                         filetype='message',batch_size=3)
         
-        # zmqSource = ZmqSource(adc_channel=20,time_bin = 0.01)
-        zmqSource = FileEchoSource(interval=0.05, filename='E:\decoder_test_data\JM8_2022-09-03_16-57-23_test1\JM8_20220903_165714_9b0440_packets.pkl', 
-                                filetype='message',batch_size=3)
+        zmqSource = ZmqSource(adc_channel=20,time_bin = 0.01)
+        # zmqSource = FileEchoSource(interval=0.05, filename='E:\decoder_test_data\JM8_2022-09-03_16-57-23_test1\JM8_20220903_165714_9b0440_packets.pkl', 
+        #                         filetype='message',batch_size=3)
         
         templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,
                 min_num_spikes=4000, training_period=None)
@@ -103,5 +103,3 @@ if  __name__ == '__main__':
         gui.register_visualizer(latency_vis, filters=['metrics'])
         gui.register_visualizer(analogControl, filters=['synced_data'], control_targets=[zmqPublisherSink, filesave])
         gui.register_visualizer(visualizer=visualizer, filters=['synced_data'])
-
-        ctx.start()
