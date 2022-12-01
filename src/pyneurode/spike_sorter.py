@@ -14,10 +14,43 @@ from sklearn.preprocessing import StandardScaler
 from tqdm.auto import tqdm
 import time
 from isosplit5 import isosplit5
+from mountainsort4.ms4alg import branch_cluster
 from scipy import spatial
 import warnings
 from .spike_sorter_cy import align_spike_cy
 from scipy import stats
+
+
+def branch_cluster(features, *, branch_depth: int=2):
+    ## Modified from https://github.com/magland/mountainsort4
+    # direclty use the provided PCA features
+    # features should be in the form [feature, samples]
+    # print('Running branch_cluster')
+
+    if features.size == 0:
+        return np.array([])
+
+    min_size_to_try_split = 20
+    labels1 = isosplit5(features)
+    
+    K = int(np.max(labels1))
+    if K <= 1 or branch_depth <= 1:
+        return labels1
+    label_offset = 0
+    labels_new = np.zeros(labels1.shape, dtype='int64')
+    for k in range(1, K+1):
+        inds_k = np.where(labels1 == k)[0]
+        if len(inds_k) > min_size_to_try_split:
+            labels_k = branch_cluster(
+                features[:, inds_k], branch_depth=branch_depth-1)
+            K_k = int(np.max(labels_k))
+            labels_new[inds_k] = label_offset+labels_k
+            label_offset += K_k
+        else:
+            labels_new[inds_k] = label_offset+1
+            label_offset += 1
+    return labels_new
+
 
 def sort_spikes(spike_waveforms, eps=1,pca_component=6, min_samples=5,clusterMethod=None):
     start = time.time()
@@ -29,7 +62,9 @@ def sort_spikes(spike_waveforms, eps=1,pca_component=6, min_samples=5,clusterMet
         pc = pca_transformer.transform(spike_waveforms)
         standard_scaler = StandardScaler().fit(pc)
         pc_norm = standard_scaler.transform(pc) #normalize the pca data
-        labels = isosplit5(pc_norm.T)
+        # labels = isosplit5(pc_norm.T)
+
+        labels = branch_cluster(pc_norm.T)
 
         # print('use normalized pc')
     else:

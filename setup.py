@@ -49,6 +49,7 @@ setup(
         'pyfirmata',
         'pyserial',
         'gitpython',
+        'mountainsort4',
         'isosplit5 @ git+https://github.com/magland/isosplit5_python'
     ],
     zip_safe=False
