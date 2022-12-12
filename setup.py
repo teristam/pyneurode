@@ -38,7 +38,7 @@ setup(
         'networkx',
         'pyzmq',
         'jupyterlab',
-        'scipy',
+        'scipy >= 1.9.0',
         'Cython',
         'Sphinx',
         'myst-parser',
