@@ -76,12 +76,6 @@ def sort_spikes(spike_waveforms, eps=1,pca_component=6, min_samples=5,clusterMet
         pc_norm = None
         labels = None
 
-    #clustering
-    # db = DBSCAN(eps=eps,min_samples=min_samples).fit(pc_norm)
-    # db = cluster.OPTICS(min_samples=min_samples,max_eps=eps).fit(pc_norm)
-    # db = cluster.MeanShift(bin_seeding=True).fit(pc_norm)
-    # labels = db.labels_
-    # print(f'Clustering took {time.time()-start:.3f} s')
 
     return labels, pc_norm, pca_transformer, standard_scaler
 
@@ -135,12 +129,30 @@ def estimate_distance_model(templates, template_cluster_id, spike_waveform_align
         cluster_dist.append({'mean':mean, 'std':std})
         
     return cluster_dist
+
+def find_similar_template(templates,threshold=0.95):
+    # return the idx of the templates thare are very similar to each other
+    # output is a 2 item tuple containing the index in each dimension
+
+    cor = np.zeros((templates.shape[0], templates.shape[0]))
+
+    # only calculate half of the matrix
+    for i in range(len(cor)):
+        for j in range(i+1,len(cor)):
+            cor[i,j] = stats.pearsonr(templates[i,:], templates[j,:]).statistic
+
+    idx = (cor>0.95).nonzero()
+    
+    return idx
+
         
 
-def calculate_spike_template(spike_waveforms, cluster_ids):
+def calculate_spike_template(spike_waveforms, cluster_ids, merge_similar=True):
     # Calculate the templates for neurons
     # spike_waveforms should be [n x time]
     # Will remove outliner cluster (-1) automatically
+    # merge_similar: whether to merge similar template
+    
     spike_waveforms = spike_waveforms[cluster_ids!=-1] 
     cluster_ids = cluster_ids[cluster_ids!=-1]
     label_unique = np.unique(cluster_ids)
@@ -148,6 +160,16 @@ def calculate_spike_template(spike_waveforms, cluster_ids):
     for i,lbls in enumerate(label_unique):
         template[i,:] =spike_waveforms[cluster_ids==lbls,:].mean(axis=0)
         # template[i,:] =np.median(spike_waveforms[cluster_ids==lbls,:],axis=0)
+        
+    idx2merge = find_similar_template(template)
+    if merge_similar and len(idx2merge) > 0:
+        print(f'Find ver similar templates. Atttempting to merge: {idx2merge}')
+
+        # remove the templates that already has a close match
+        idx2keep = np.setdiff1d(np.arange(template.shape[0]), idx2merge[1])
+        template = template[idx2keep]
+        label_unique = label_unique[idx2keep]
+
 
     return template, label_unique
 
@@ -557,6 +579,7 @@ def template_match_all_electrodes(df, templates, template_electrode_id, template
     df['cluster_id'] = labels_template #make plotting program aware this is a categorical variable
     df['dist_tm'] = norm_dist_template
     df['spike_waveform_aligned'] = aligned_waveforms
+    time_deltas = np.concatenate(time_deltas)
     df['timestamps_aligned'] = df['timestamps'] - np.array(time_deltas)
     if pca_transformers is not None:
         df['pc_norm'] = pc_norms
