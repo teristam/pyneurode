@@ -53,6 +53,7 @@ class MountainsortTemplateProcessor(BatchProcessor):
         self.spike_print_counter = 0
         self.pca_component = 3
         self.last_sort_time = None # time since last template computation
+        self.start_time = time.time()
 
     # @profile_cProfile()
     def run(self):

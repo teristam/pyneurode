@@ -1,4 +1,5 @@
 import pickle
+from random import sample
 
 # import matplotlib.pylab as plt
 import numpy as np
@@ -14,10 +15,43 @@ from sklearn.preprocessing import StandardScaler
 from tqdm.auto import tqdm
 import time
 from isosplit5 import isosplit5
+from mountainsort4.ms4alg import branch_cluster
 from scipy import spatial
 import warnings
 from .spike_sorter_cy import align_spike_cy
 from scipy import stats
+
+
+def branch_cluster(features, *, branch_depth: int=2):
+    ## Modified from https://github.com/magland/mountainsort4
+    # direclty use the provided PCA features
+    # features should be in the form [feature, samples]
+    # print('Running branch_cluster')
+
+    if features.size == 0:
+        return np.array([])
+
+    min_size_to_try_split = 20
+    labels1 = isosplit5(features)
+    
+    K = int(np.max(labels1))
+    if K <= 1 or branch_depth <= 1:
+        return labels1
+    label_offset = 0
+    labels_new = np.zeros(labels1.shape, dtype='int64')
+    for k in range(1, K+1):
+        inds_k = np.where(labels1 == k)[0]
+        if len(inds_k) > min_size_to_try_split:
+            labels_k = branch_cluster(
+                features[:, inds_k], branch_depth=branch_depth-1)
+            K_k = int(np.max(labels_k))
+            labels_new[inds_k] = label_offset+labels_k
+            label_offset += K_k
+        else:
+            labels_new[inds_k] = label_offset+1
+            label_offset += 1
+    return labels_new
+
 
 def sort_spikes(spike_waveforms, eps=1,pca_component=6, min_samples=5,clusterMethod=None):
     start = time.time()
@@ -29,7 +63,9 @@ def sort_spikes(spike_waveforms, eps=1,pca_component=6, min_samples=5,clusterMet
         pc = pca_transformer.transform(spike_waveforms)
         standard_scaler = StandardScaler().fit(pc)
         pc_norm = standard_scaler.transform(pc) #normalize the pca data
-        labels = isosplit5(pc_norm.T)
+        # labels = isosplit5(pc_norm.T)
+
+        labels = branch_cluster(pc_norm.T)
 
         # print('use normalized pc')
     else:
@@ -111,6 +147,7 @@ def calculate_spike_template(spike_waveforms, cluster_ids):
     template = np.zeros((len(label_unique), spike_waveforms.shape[1]),dtype=np.float32)
     for i,lbls in enumerate(label_unique):
         template[i,:] =spike_waveforms[cluster_ids==lbls,:].mean(axis=0)
+        # template[i,:] =np.median(spike_waveforms[cluster_ids==lbls,:],axis=0)
 
     return template, label_unique
 
@@ -177,7 +214,7 @@ def align_spike(spikes, chan_per_electrode=4, search_span = 15, pre_peak_span=15
     # ax[1].plot(abs_spike.T)
 
     #Create a mask to restrict the search region
-    # set the signal output the mask to be zero
+    # set the signal outside the mask to be zero
     mask = np.zeros_like(abs_spike)
     search_region = [np.arange(spike_length/2-search_span,spike_length/2+search_span)
         +i*spike_length for i in range(chan_per_electrode) ]
@@ -264,6 +301,8 @@ def makeSpikeDataframe(spikeEvent):
         'timestamps':timestamps,
         'acq_timestamps': acq_timestamps
     })
+    
+    df = df.sort_values('timestamps')
 
     return df 
 
@@ -354,7 +393,6 @@ def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1,
         
         # assert np.all([len(df.iloc[i].pc_norm)==pca_component for i in range(len(df))])
             
-
     return df, pca_transformers,standard_scalers
 
 
@@ -590,8 +628,7 @@ def makeTuningDataframe(position,fr,time_bin):
 def sort_spikes_online(df_ref, df2sort, eps=1, pca_component=6):
     df_ref = df_ref.copy()
     df2sort = df2sort.copy()
-    df_sorted,pca_transformers = sort_all_electrodes(df_ref, eps=eps, pca_component=pca_component)
-
+    df_sorted,pca_transformers,standard_scalers = sort_all_electrodes(df_ref, eps=eps, pca_component=pca_component)
     # calculate templates
     df_cluster = df_sorted.groupby('cluster_id').mean().reset_index()
     cluster_electrode_ids = dict(zip(df_cluster.cluster_id.values, df_cluster.electrode_ids.values))
@@ -621,7 +658,7 @@ def sort_spikes_online(df_ref, df2sort, eps=1, pca_component=6):
         pc = pca_transformers[e_ids].transform(spike_waveforms)
         df_sorted_all.loc[df_sorted_all.electrode_ids==e_ids, [f'PC{i}' for i in range(pca_component)]] = pc
 
-    return df_sorted, df_sorted_all,template_cluster_id
+    return df_sorted, df_sorted_all,template_cluster_id, templates
 
 
 
@@ -678,21 +715,25 @@ class SpikeEvent:
         self.electrode_id = electrode_id
         self.timestamp = timestamp
         self.data = spikedata
+        self.acq_timestamp = None
     
     def __str__(self):
         return f'electrode_id: {self.electrode_id}, timestamp: {self.timestamp}, spikedata: {self.data.shape}'
         
 
-def detectSpike(data,factor=4, useAbsoluteThres=False, preSample=20, postSample=20):
-    # Detect spike based on median threshold
-
+def detectSpike(data,factor=4, method='median', useAbsoluteThres=False, preSample=20, postSample=20, ntetrode=4):
+    # Detect spike based on threshold, can either be median or absolute
+    # input data should be in the shape of (channel x time)
+    
     spikes_list = []
     sampleIndex = preSample
     absData = np.abs(data)
-    m = np.median(absData,axis=1)
-    print(f'Spike threshold: {m}')
     
-    for electrode in tqdm(range(4)):
+    if method=='median':
+        m = np.median(absData,axis=1) 
+        print(f'Spike threshold: {m}')
+    
+    for electrode in tqdm(range(ntetrode)):
         sampleIndex = preSample
                 
         # with tqdm(total=absData.shape[1]) as pbar:
@@ -700,32 +741,36 @@ def detectSpike(data,factor=4, useAbsoluteThres=False, preSample=20, postSample=
 
             for channel in range(4):
                 idx = electrode*4+channel
-#                     if(absData[idx,sampleIndex]>factor*m[idx]):
-                if not useAbsoluteThres:
+
+                if method=='median':
                     thres = factor*m[idx]
                 else:
                     thres = factor
+                
+                # At the current sample index, check all channel to see if any data point exceed the threshold
                 if(data[idx,sampleIndex]<-thres): #only detect negative spike
 
                     #trigger spike
                     #find maximum
 #                         peakIdx = np.argmax(absData[idx,(sampleIndex-preSample):(sampleIndex+postSample)])
-                    peakIdx = np.argmin(data[idx,(sampleIndex-preSample):(sampleIndex+postSample)])
-
-                    peakIdx = sampleIndex-preSample+peakIdx #shift to refer to the whole array
+                    # peakIdx = np.argmin(data[idx,(sampleIndex-preSample):(sampleIndex+postSample)])
+                    # peakIdx = sampleIndex-preSample+peakIdx #shift to refer to the whole array
+                    
+                    # do not align spike at this stage, to avoid overlapping spike causing issue
+                    # otherwise two spike may have the same timestamp
+                    peakIdx = sampleIndex 
+                    
 #                     print(peakIdx)
                     # record down the spike waveform
-                    spikedata = data[electrode:electrode+4, (peakIdx-preSample):(peakIdx+postSample)]
+                    spikedata = data[np.arange(4)+electrode*4, (peakIdx-preSample):(peakIdx+postSample)]
 
                     spikeEvent = SpikeEvent(electrode,peakIdx,spikedata)
-
+                    # if peakIdx<1000:
+                    #     print(peakIdx, sampleIndex)
                     spikes_list.append(spikeEvent)
 
                     sampleIndex += postSample
-#                         print(sampleIndex)
 
-                    # pbar.n = sampleIndex
-                    # pbar.refresh()
 
                     break #break the channel loop
                 else:

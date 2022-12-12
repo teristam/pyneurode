@@ -52,6 +52,7 @@ setup(
         'igraph',
         'isosplit5 @ git+https://github.com/magland/isosplit5_python',
         'snakeviz'
+        'mountainsort4',
     ],
     zip_safe=False
 )
