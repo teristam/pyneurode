@@ -49,7 +49,9 @@ setup(
         'pyfirmata',
         'pyserial',
         'gitpython',
-        'isosplit5 @ git+https://github.com/magland/isosplit5_python'
+        'igraph',
+        'isosplit5 @ git+https://github.com/magland/isosplit5_python',
+        'snakeviz'
     ],
     zip_safe=False
 )
