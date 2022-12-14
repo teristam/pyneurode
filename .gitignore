@@ -138,5 +138,6 @@ sorting_tmp/
 
 # Sphinx
 doc/_build/
-
+.vscode
+notebooks
 data
