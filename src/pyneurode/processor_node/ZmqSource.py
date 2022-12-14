@@ -61,18 +61,17 @@ class ZmqSource(Source):
                     timestamp = data['data_timestamp']
 
                 #process spike data
-                if 'spike' in data.keys():
+                if data['type'] == 'spike':
                     # note: below python 3.10, perf_counter is not system-wide on Windows, thus
                     # the number returned by different process may not be aligned to each others
                     data['spike'].acq_timestamp = utils.perf_counter()
                     msg_list.append(Message('spike', data['spike'], timestamp))
 
                 #process raw signal data
-                # if 'data' in data.keys():
-
-                #     data_ds = self.downsample_adc(data['data'])
-                #     if data_ds is not None:
-                #         msg_list.append(Message('adc_data', data_ds, timestamp)) 
+                if data['type'] == 'data':
+                    data_ds = self.downsample_adc(data['data'])
+                    if data_ds is not None:
+                        msg_list.append(Message('adc_data', data_ds, timestamp)) 
 
             if self.data_dump_fn is not None:
                 pickle.dump(msg_list,self.data_dump)

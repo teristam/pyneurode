@@ -52,36 +52,33 @@ class OpenEphysEvent(object):
     def __repr__(self):
         return self.__str__
 
+
 class OpenEphysSpikeEvent(object):
-    def __init__(self, _d=None, _data=None):
-        self.n_channels = 0
-        self.n_samples = 0
-        # self.pc_proj = []
-        # self.gain = []
-        self.electrode_id = 0
+
+    def __init__(self, _d, _data=None):
+        self.stream = ''
+        self.source_node = 0
+        self.electrode = 0
+        self.sample_num = 0
+        self.num_channels = 0
+        self.num_samples = 0
         self.sorted_id = 0
-        self.timestamp = 0
-        self.channel = 0
         self.threshold = []
-        # self.color = []
-        self.source = 0
-        self.data = None
-        self.acq_timestamp = -1 #used to keep track of spike sorting time
-        if _d:
-            self.__dict__.update(_d) #update object data with spike event content
-        # format spike data
+
+        self.__dict__.update(_d)
+        
         if type(_data) is np.ndarray:
             self.data = _data # no need converstion
         else:
             n_arr = np.frombuffer(_data, dtype=np.float32)
-            n_arr = np.reshape(n_arr, (self.n_channels, self.n_samples))
+            n_arr = np.reshape(n_arr, (self.num_channels, self.num_samples))
             self.data = n_arr
 
     def __str__(self):
         ds = self.__dict__.copy()
         del ds['data']
         return str(ds)
-
+    
     def _repr_pretty_(self, p, cycle):
         s = str(self)
         if self.data is not None:
@@ -89,6 +86,45 @@ class OpenEphysSpikeEvent(object):
         else:
             s+= ' No spike data'
         p.text(s)
+
+# class OpenEphysSpikeEvent(object):
+#     def __init__(self, _d=None, _data=None):
+#         self.n_channels = 0
+#         self.n_samples = 0
+#         # self.pc_proj = []
+#         # self.gain = []
+#         self.electrode_id = 0
+#         self.sorted_id = 0
+#         self.timestamp = 0
+#         self.channel = 0
+#         self.threshold = []
+#         # self.color = []
+#         self.source = 0
+#         self.data = None
+#         self.acq_timestamp = -1 #used to keep track of spike sorting time
+#         if _d:
+#             self.__dict__.update(_d) #update object data with spike event content
+#         # format spike data
+#         if type(_data) is np.ndarray:
+#             self.data = _data # no need converstion
+#         else:
+#             n_arr = np.frombuffer(_data, dtype=np.float32)
+#             print(_data)
+#             # n_arr = np.reshape(n_arr, (self.n_channels, self.n_samples))
+#             self.data = n_arr
+
+#     def __str__(self):
+#         ds = self.__dict__.copy()
+#         del ds['data']
+#         return str(ds)
+
+#     def _repr_pretty_(self, p, cycle):
+#         s = str(self)
+#         if self.data is not None:
+#             s+= f' Spike data shape:{self.data.shape}'
+#         else:
+#             s+= ' No spike data'
+#         p.text(s)
 
     
 
@@ -259,13 +295,6 @@ class SpikeSortClient(object):  # TODO more configuration stuff that may be obta
                             data_received['channel_num'] = channel_num
                             data_received['data_timestamp'] = time_stamp
                             data_list.append(data_received)
-                            # data = {
-                            #     'data':n_arr,
-                            #     'channel_num': channel_num,
-                            #     'data_timestamp': time_stamp
-                            # }
-                            
-                            # data_received['data'].append(data)
 
                         except IndexError as e:
                             print(e)
@@ -286,7 +315,7 @@ class SpikeSortClient(object):  # TODO more configuration stuff that may be obta
 
                     elif header['type'] == 'spike':
                         spike = OpenEphysSpikeEvent(header['spike'], message[2])
-                        # print(spike.data)
+                        print(spike.data.shape)
                         #Extract spike data
                         data_received['type'] = 'spike'
                         data_received['spike'] = spike
