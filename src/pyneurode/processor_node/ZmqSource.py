@@ -1,8 +1,10 @@
-from .Processor import EchoSink, Source, Message
+from pyneurode.processor_node.AnalogVisualizer import AnalogVisualizer
+from pyneurode.processor_node.GUIProcessor import GUIProcessor
+from pyneurode.processor_node.Processor import EchoSink, Source, Message
 import time 
 from pyneurode.zmq_client import *
 import pickle 
-from .ProcessorContext import ProcessorContext
+from pyneurode.processor_node.ProcessorContext import ProcessorContext
 from pyneurode.spike_sorter import simpleDownSample
 from pyneurode import utils
 
@@ -11,7 +13,7 @@ class ZmqSource(Source):
     '''
     Read data from ZMQlink
     '''
-    def __init__(self, adc_channel =20, Fs = 30000, time_bin = 0.01, data_dump_fn = None):
+    def __init__(self, adc_channel:list, Fs = 30000, time_bin = 0.01, data_dump_fn = None):
         super().__init__()
         self.data_dump_fn = data_dump_fn
         self.adc_channel = adc_channel
@@ -26,7 +28,7 @@ class ZmqSource(Source):
 
     def downsample_adc(self, data):
         if self.adc_channel is not None:
-            d = data[[self.adc_channel],:].T
+            d = data[self.adc_channel,:].T
         else:
             d = data.T
 
@@ -66,11 +68,11 @@ class ZmqSource(Source):
                     msg_list.append(Message('spike', data['spike'], timestamp))
 
                 #process raw signal data
-                if 'data' in data.keys():
+                # if 'data' in data.keys():
 
-                    data_ds = self.downsample_adc(data['data'])
-                    if data_ds is not None:
-                        msg_list.append(Message('adc_data', data_ds, timestamp)) 
+                #     data_ds = self.downsample_adc(data['data'])
+                #     if data_ds is not None:
+                #         msg_list.append(Message('adc_data', data_ds, timestamp)) 
 
             if self.data_dump_fn is not None:
                 pickle.dump(msg_list,self.data_dump)
@@ -80,12 +82,12 @@ class ZmqSource(Source):
 
 if __name__ == '__main__':
     with ProcessorContext() as ctx:
-        zmqSource = ZmqSource(adc_channel=68, data_dump_fn='data/64_channel_packetlist.pkl')
+        zmqSource = ZmqSource(adc_channel=[20])
+        # gui = GUIProcessor(internal_buffer_size=5000)
         echoProcessor = EchoSink()
-
+        
+        # pos_visualizer = AnalogVisualizer('pos', buffer_length=6000)
+        
+        # zmqSource.connect(gui, 'adc_data')
         zmqSource.connect(echoProcessor)
-
-        ctx.register_processors(zmqSource, echoProcessor)
-
-        ctx.start()
-
+        # gui.register_visualizer(pos_visualizer, filters=['adc_data'])
