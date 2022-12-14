@@ -56,20 +56,22 @@ class ZmqSource(Source):
             for data in data_list:
                
 
-                timestamp = None
-                if 'data_timestamp' in data.keys():
-                    timestamp = data['data_timestamp']
+                # timestamp = None
+                # if 'data_timestamp' in data.keys():
+                #     timestamp = data['data_timestamp']
 
                 #process spike data
                 if data['type'] == 'spike':
                     # note: below python 3.10, perf_counter is not system-wide on Windows, thus
                     # the number returned by different process may not be aligned to each others
                     data['spike'].acq_timestamp = utils.perf_counter()
+                    timestamp = data['spike'].sample_num
                     msg_list.append(Message('spike', data['spike'], timestamp))
 
                 #process raw signal data
                 if data['type'] == 'data':
                     data_ds = self.downsample_adc(data['data'])
+                    timestamp = data['data_timestamp']
                     if data_ds is not None:
                         msg_list.append(Message('adc_data', data_ds, timestamp)) 
 
@@ -82,11 +84,11 @@ class ZmqSource(Source):
 if __name__ == '__main__':
     with ProcessorContext() as ctx:
         zmqSource = ZmqSource(adc_channel=[20])
-        # gui = GUIProcessor(internal_buffer_size=5000)
+        gui = GUIProcessor(internal_buffer_size=5000)
         echoProcessor = EchoSink()
         
-        # pos_visualizer = AnalogVisualizer('pos', buffer_length=6000)
+        pos_visualizer = AnalogVisualizer('pos', buffer_length=6000)
         
-        # zmqSource.connect(gui, 'adc_data')
+        zmqSource.connect(gui, 'adc_data')
         zmqSource.connect(echoProcessor)
-        # gui.register_visualizer(pos_visualizer, filters=['adc_data'])
+        gui.register_visualizer(pos_visualizer, filters=['adc_data'])

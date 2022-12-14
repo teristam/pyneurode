@@ -64,6 +64,7 @@ class OpenEphysSpikeEvent(object):
         self.num_samples = 0
         self.sorted_id = 0
         self.threshold = []
+        self.acq_timestamp = -1
 
         self.__dict__.update(_d)
         
@@ -290,7 +291,7 @@ class SpikeSortClient(object):  # TODO more configuration stuff that may be obta
                             n_arr = np.reshape(n_arr, n_samples)
 
                             
-                            data_received['type'] = 'data'
+                            data_received['type'] = 'continuous_data'
                             data_received['data'] = n_arr
                             data_received['channel_num'] = channel_num
                             data_received['data_timestamp'] = time_stamp
@@ -305,37 +306,17 @@ class SpikeSortClient(object):  # TODO more configuration stuff that may be obta
                             else:
                                 print("only one frame???")
 
-                    # elif header['type'] == 'event':
-
-                    #     if header['data_size'] > 0:
-                    #         event = OpenEphysEvent(header['content'], message[2])
-                    #     else:
-                    #         event = OpenEphysEvent(header['content'])
-                    #     self.update_plot_event(event)
-
                     elif header['type'] == 'spike':
                         spike = OpenEphysSpikeEvent(header['spike'], message[2])
-                        print(spike.data.shape)
+                        # print(spike.data.shape)
                         #Extract spike data
                         data_received['type'] = 'spike'
                         data_received['spike'] = spike
                         data_list.append(data_received)
-                        # self.update_plot_spike(spike)
-
-                    # elif header['type'] == 'param':
-                    #     c = header['content']
-                    #     self.__dict__.update(c)
-                    #     print(c)
-                    # else:
-                    #     raise ValueError("message type unknown")
-                    
-        
-                        
-                    
                 else:
                     print("got no data")
-
                     break
+                
             elif self.event_socket in socks and self.socket_waits_reply:
                 # Evetn reply received
                 message = self.event_socket.recv()
@@ -347,13 +328,6 @@ class SpikeSortClient(object):  # TODO more configuration stuff that may be obta
                 else:
                     print("???? getting a reply before a send?")
 
-            # data_list.append(data_received)
-        # print "finishing callback"
-        # if store_data:
-        #     self.data_list.append(data_received)
-        if events:
-            pass  # TODO implement the event passing
-        
         
         data = combine_data_channel(data_list, 
                                             list(range(27)))
@@ -361,7 +335,12 @@ class SpikeSortClient(object):  # TODO more configuration stuff that may be obta
         if data is not None:
             print(data['data'].shape)
             
-        return data_list
+        # remove all the channel data
+        data2send = [d for d in data_list if not d['type'] == 'continuous_data']
+        if data is not None:
+            data2send.append(data) # add the concatenated data
+            
+        return data2send
 
     @staticmethod
     def terminate():
@@ -378,7 +357,7 @@ def combine_data_channel(data_list, channel_list:list):
     
     # combine data from all channel into one array
     for d in data_list:
-        if d['type'] == 'data':
+        if d['type'] == 'continuous_data':
             try:
                 idx = channel_list.index(d['channel_num'])
                 # print('channel list idx', idx)
@@ -400,13 +379,7 @@ def combine_data_channel(data_list, channel_list:list):
      
             except ValueError:
                     print('Channel number not found in data list')
-                
-        # make sure we get all the data
-        # assert len(data) == len(channel_list), f'Number of channel does not match {len(data)} expected: {len(channel_list)}'
-        # print(channel_list, data)
-        
-        # make sure all data are aligned to the same timestamp
-        # assert np.all(sample_idx == sample_idx[0]), f'Data not aligned to the same timestamp {sample_idx}'
+            
         
     if len(data_all)>0:
         data = {}
