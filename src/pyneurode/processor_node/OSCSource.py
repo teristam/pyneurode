@@ -5,33 +5,18 @@ accept data from Bonsai
 '''
 
 import logging
+import threading
 from typing import Any, Optional
-from pythonosc.dispatcher import Dispatcher
+
+import numpy as np
 from pythonosc import osc_server
+from pythonosc.dispatcher import Dispatcher
+
 from pyneurode.processor_node.AnalogVisualizer import AnalogVisualizer
 from pyneurode.processor_node.GUIProcessor import GUIProcessor
 from pyneurode.processor_node.Message import Message
 from pyneurode.processor_node.Processor import EchoSink, Source
-import numpy as np 
-import threading
-
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
-
-# message_no = 0
-
-# def print_sequence(addr, message_no, *osc_message):
-#     print(message_no[0], osc_message)
-#     message_no[0] += 1
-
-
-# ip_addr = '127.0.0.1'
-# port = 2323
-
-# server = osc_server.ThreadingOSCUDPServer(
-#     (ip_addr, port), dispatcher 
-# )
-
-# server.serve_forever()
 
 
 class ADCMessage(Message):
