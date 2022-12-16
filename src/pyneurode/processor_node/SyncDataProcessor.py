@@ -18,6 +18,7 @@ from pyneurode.RingBuffer.RingBufferG import RingBufferG
 class SyncDataProcessor(BatchProcessor):
     '''
     Synchronize two sources of time series data
+    the two sources of data are assume to have the sample sampling frequency
     '''
     
     def __init__(self, interval=0.001, internal_buffer_size=10000, ignore_adc:bool=False, verbose=True):
