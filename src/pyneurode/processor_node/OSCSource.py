@@ -34,7 +34,6 @@ def receive_message(addr, args, *osc_message):
     message_list = args[0]
     lock = threading.Lock()
     lock.acquire()
-    print(osc_message)
     message_list.append(ADCMessage(np.array(osc_message).reshape(1,-1)))
     lock.release()
 
@@ -85,11 +84,11 @@ if __name__ == '__main__':
         osc_source = OSCSource('127.0.0.1', 2323, '/data')
         
         gui = GUIProcessor()
-        visualizer = AnalogVisualizer('OSC data')
+        visualizer = AnalogVisualizer('OSC data', buffer_length=1000)
         gui.register_visualizer(visualizer, [ADCMessage.type])
     
         echoSink = EchoSink()
-        osc_source.connect(echoSink)
+        # osc_source.connect(echoSink)
         osc_source.connect(gui)
 
             

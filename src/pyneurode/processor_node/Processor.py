@@ -300,7 +300,8 @@ class SineTimeSource(TimeSource):
     '''
     A TimeSource that generate multi-channel sine wave for debugging purpose
     '''
-    def __init__(self, interval:float, frequency:float, channel_num:int, sampling_frequency:int=100, noise_std:float=0):
+    def __init__(self, interval:float, frequency:float, channel_num:int, sampling_frequency:int=100,
+                 noise_std:float=0, scale=1):
         super().__init__(interval)
         self.frequency = frequency #in Hz
         self.start_time = time.time()
@@ -308,6 +309,7 @@ class SineTimeSource(TimeSource):
         self.last_time = None #last time the data are plotted
         self.dt = 1/sampling_frequency
         self.noise_std = noise_std
+        self.scale = scale
 
     def process(self):
         # Generate a sine waveform
@@ -322,7 +324,7 @@ class SineTimeSource(TimeSource):
         if len(t)> 0:
             # print(t)
             self.last_time = t[-1]+self.dt
-            y = np.sin(2*np.pi*self.frequency*t)
+            y = np.sin(2*np.pi*self.frequency*t)*self.scale
             y = np.tile(y, (self.channel_num,1)).T
             
             if self.noise_std > 0:
