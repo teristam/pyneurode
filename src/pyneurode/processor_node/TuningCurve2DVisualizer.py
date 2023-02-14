@@ -7,7 +7,7 @@ from pyneurode.processor_node.Message import Message
 import numpy as np
 import shortuuid
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
-from typing import List, Union
+from typing import Any, List, Optional, Union
 from pyneurode.processor_node.Processor import SineTimeSource, Sink
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 from pyneurode.processor_node.SimGridCellSource import SimGridCellSource
@@ -15,11 +15,18 @@ from pyneurode.processor_node.Visualizer import Visualizer
 from pyneurode.processor_node.MountainsortTemplateProcessor import RecomputeTemplateControlMessage
 from scipy.ndimage import gaussian_filter
 
+class SpacialData(Message):
+    def __init__(self, x:np.ndarray, y:np.ndarray, data: np.ndarray, timestamp: Optional[float] = None):
+        data = np.concatenate([x,y,data], axis=1) # first column is x coordinate, second column is y coordinates, the rest are data        
+        super().__init__('spacial_data', data, timestamp)
+        
+
 class TuningCurve2DVisualizer(Visualizer):
     '''
     Display a 2D analog signal
+    It accepts data 
     '''
-    def __init__(self, name:str, xy_idx, buffer_length:int = 500, scale = 6, xbin:int = 10, ybin:int=10, xmax=10, ymax=10, time_scale=None) -> None:
+    def __init__(self, name:str, buffer_length:int = 500, scale = 6, xbin:int = 10, ybin:int=10, xmax=10, ymax=10, time_scale=None) -> None:
         super().__init__(name)
         self.plot_data = (np.arange(buffer_length), np.zeros((buffer_length,)))
         self.name = name #unique identying string for the visualizer
@@ -41,14 +48,15 @@ class TuningCurve2DVisualizer(Visualizer):
         self.xbinsize = self.xmax/xbin
         self.ybinsize = self.ymax/ybin
         self.tuning_curve = None
-        self.xy_idx = xy_idx #index of the input data corresponding to the x and y coordinate of the 2D tuning curve, all others are treated as values
         self.smooth = True
+        self.sel_cell_idx = 0
+        self.color_map_scale = None
 
     def init_gui(self):
         window_width = 800
         with dpg.window(label=self.name, width=window_width, height=500, tag=self.name):
             with dpg.group(horizontal=True):
-                with dpg.child_window(width = -window_width*1.5/4):
+                with dpg.child_window(width = -200):
 
                     # with dpg.drawlist(width=500, height=500) as self.canvas:
                     #         with dpg.draw_node(label = 'animal_position', user_data=0.0):
@@ -58,7 +66,7 @@ class TuningCurve2DVisualizer(Visualizer):
                     values = np.zeros((self.xbin, self.ybin))
                     
                     with dpg.group(horizontal=True):
-                        dpg.add_colormap_scale(min_scale=0, max_scale=self.scale, height=400, colormap=dpg.mvPlotColormap_Hot)
+                        self.color_map_scale = dpg.add_colormap_scale(min_scale=0, max_scale=self.scale, height=400, colormap=dpg.mvPlotColormap_Hot)
                         with dpg.plot(label="Heat Series", no_mouse_pos=True, height=-1, width=-1):
                             dpg.add_plot_axis(dpg.mvXAxis, label="x", lock_min=True, lock_max=True, no_gridlines=True, no_tick_marks=True)
                             with dpg.plot_axis(dpg.mvYAxis, label="y", no_gridlines=True, no_tick_marks=True, lock_min=True, lock_max=True):
@@ -67,18 +75,28 @@ class TuningCurve2DVisualizer(Visualizer):
       
 
             
-                with dpg.child_window(width = window_width*1.5/4) as control_panel:
-                    def scale_slider_update(sender, app_data,user_data):
-                        self.scale = app_data
-                        # dpg.fit_axis_data(self.y_axis)
+                with dpg.child_window(width = 200) as control_panel:
+                    with dpg.group():
+                        def scale_slider_update(sender, value):
+                            self.scale = value
+                            dpg.configure_item(self.color_map_scale, max_scale=self.scale)
+                            dpg.configure_item(self.heatseries, scale_max=self.scale)
                         
-                    dpg.add_slider_float(label='Scale slider', width=window_width/4,
-                                                max_value=100, default_value=20, callback=scale_slider_update)
-                    
+                        dpg.add_text('Colormap scale')
+                        dpg.add_slider_float(label='Scale slider', width=window_width/4,
+                                                    max_value=100, default_value=20, callback=scale_slider_update)
+
+                        def listbox_callback(sender, selected_val):
+                            self.sel_cell_idx = int(selected_val) # need to shift to account for the x and y coordinates
+                            
+                        dpg.add_text('Cell selection')
+                        self.list_box=dpg.add_listbox(label='Cells',items=[], width=-1, num_items=10,
+                                callback=listbox_callback)
+                        
 
                     self.control_panel = control_panel
 
-    def update(self, messages: List[Message]):
+    def update(self, messages: List[SpacialData]):
         # message data format time x channel
         if self.buffer is None:
             self.buffer = RingBuffer((self.buffer_length, messages[0].data.shape[1]))
@@ -107,32 +125,31 @@ class TuningCurve2DVisualizer(Visualizer):
         data = self.buffer.readLatest(50)
         
         # bin the x and y position
-        x = np.clip(np.floor(data[:,self.xy_idx[0]]/self.xbinsize), 0, self.xbin-1).astype(int)
-        y = np.clip(np.floor(data[:,self.xy_idx[1]]/self.ybinsize), 0, self.ybin-1).astype(int)
+        x = np.clip(np.floor(data[:,0]/self.xbinsize), 0, self.xbin-1).astype(int)
+        y = np.clip(np.floor(data[:,1]/self.ybinsize), 0, self.ybin-1).astype(int)
+        z_idx = list(range(data.shape[1]-2))
+        z =  data[:, 2:]
         
-        z_idx = np.setdiff1d(np.arange(data.shape[1]), self.xy_idx)
-        z_values =  data[:, z_idx]
-        sel_idx = 0
-        z = z_values[:,0]
-    
+        #update the list box
+        dpg.configure_item(self.list_box, items=z_idx, num_items=10)
         
         if self.tuning_curve is None:
-            self.tuning_curve = np.zeros((self.ybin, self.xbin))
+            self.tuning_curve = np.zeros((len(z_idx), self.ybin, self.xbin))
             self.bin_n = np.zeros((self.ybin, self.xbin))
         
         for i in range(data.shape[0]):
             # Average is always sum(x)/x_n
-            self.tuning_curve[x[i], y[i]] = (self.bin_n[x[i], y[i]]*self.tuning_curve[x[i], y[i]] + z[i])/(self.bin_n[x[i], y[i]]+1)
+            self.tuning_curve[:, x[i], y[i]] = (self.bin_n[x[i], y[i]]*self.tuning_curve[:, x[i], y[i]] + z[i,:])/(self.bin_n[x[i], y[i]]+1)
             self.bin_n[x[i], y[i]] += 1
             
         
-        if not self.tuning_curve is None:
+        if not self.tuning_curve is None and type(self.sel_cell_idx) is int:
             if self.smooth:
-                smoothed_curve = gaussian_filter(self.tuning_curve, sigma=1)
+                smoothed_curve = gaussian_filter(self.tuning_curve[self.sel_cell_idx,:,:], sigma=1)
                 dpg.set_value(self.heatseries, (smoothed_curve,))
                 
             else:
-                dpg.set_value(self.heatseries, (self.tuning_curve,))
+                dpg.set_value(self.heatseries, (self.tuning_curve[self.sel_cell_idx,:,:],))
             
         
 
@@ -150,9 +167,9 @@ if __name__ == '__main__':
 
     with ProcessorContext() as ctx:
 
-        grid_cell = SimGridCellSource(0.02, arena_size = 100, speed=2, firing_field_sd=5, grid_spacing=20)
+        grid_cell = SimGridCellSource(0.02, arena_size = 100, speed=2, firing_field_sd=[10,20,40], grid_spacing=20)
         
-        tuningCurve2DVisualizer = TuningCurve2DVisualizer('Synchronized signals',xy_idx = [0,1], scale=10, buffer_length=6000, 
+        tuningCurve2DVisualizer = TuningCurve2DVisualizer('Synchronized signals', scale=10, buffer_length=6000, 
                                                          xbin=100, ybin=100, xmax=100, ymax=100)
         
         analogVisualizer = AnalogVisualizer('Analog signal')
