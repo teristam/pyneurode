@@ -42,12 +42,22 @@ class SimGridCellSource(TimeSource):
         yshift = self.y - round(self.y/self.grid_spacing)*self.grid_spacing
         
         # use a 2d gaussian to calculate the firing rate
-        fr = multivariate_normal.pdf((xshift, yshift),  mean=(0,0), cov=self.firing_field_sd) 
-        norm_factor = multivariate_normal.pdf((0, 0),  mean=(0,0), cov=self.firing_field_sd) 
-        fr = fr/norm_factor * self.base_fr # make sure the center is always at the base firing rate
-        
-        data = np.array([[self.x, self.y, fr]])
-        
+        if type(self.firing_field_sd) is list:
+            fr_list = []
+            for i in range(len(self.firing_field_sd)):
+                fr = multivariate_normal.pdf((xshift, yshift),  mean=(0,0), cov=self.firing_field_sd[i]) 
+                norm_factor = multivariate_normal.pdf((0, 0),  mean=(0,0), cov=self.firing_field_sd[i]) 
+                fr = fr/norm_factor * self.base_fr # make sure the center is always at the base firing rate
+                
+                fr_list.append(fr)
+            
+            data = np.array([[self.x, self.y, *fr_list]])
+        else:
+            fr = multivariate_normal.pdf((xshift, yshift),  mean=(0,0), cov=self.firing_field_sd[i]) 
+            norm_factor = multivariate_normal.pdf((0, 0),  mean=(0,0), cov=self.firing_field_sd[i]) 
+            fr = fr/norm_factor * self.base_fr # make sure the center is always at the base firing rate
+            data = np.array([[self.x, self.y, fr]])
+            
         msg = Message('grid_cell', data)
         return msg
     
