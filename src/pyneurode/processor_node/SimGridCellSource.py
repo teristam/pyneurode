@@ -2,6 +2,7 @@
 Simulate the firing field of a grid cell for testing purpose
 '''
 
+from typing import Optional
 from pyneurode.processor_node.AnalogVisualizer import AnalogVisualizer
 from pyneurode.processor_node.GUIProcessor import GUIProcessor
 from pyneurode.processor_node.Message import Message
@@ -11,7 +12,18 @@ from scipy.stats import multivariate_normal
 
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 
+class SpacialDataMessage(Message):
+    dtype = 'spacial_data'
+    def __init__(self, x:np.ndarray, y:np.ndarray, data: np.ndarray, timestamp: Optional[float] = None):
 
+        if x.ndim>1:
+            data1 = np.concatenate([x,y,data], axis=1) # first column is x coordinate, second column is y coordinates, the rest are data      
+        else:
+            data1 = np.concatenate([x[None,:], y[None,:], data], axis=1)
+        
+        super().__init__(SpacialDataMessage.dtype, data1, timestamp)
+
+        
 def guassmf2d(x, mean, sigma):
     # Guassian membership function to estimate the probability
     
@@ -53,12 +65,12 @@ class SimGridCellSource(TimeSource):
             
             data = np.array([[self.x, self.y, *fr_list]])
         else:
-            fr = multivariate_normal.pdf((xshift, yshift),  mean=(0,0), cov=self.firing_field_sd[i]) 
-            norm_factor = multivariate_normal.pdf((0, 0),  mean=(0,0), cov=self.firing_field_sd[i]) 
+            fr = multivariate_normal.pdf((xshift, yshift),  mean=(0,0), cov=self.firing_field_sd) 
+            norm_factor = multivariate_normal.pdf((0, 0),  mean=(0,0), cov=self.firing_field_sd) 
             fr = fr/norm_factor * self.base_fr # make sure the center is always at the base firing rate
             data = np.array([[self.x, self.y, fr]])
-            
-        msg = Message('grid_cell', data)
+        
+        msg = SpacialDataMessage(x=data[:,0], y = data[:,1], data=data[:,2:])
         return msg
     
     def shutdown(self):
@@ -78,4 +90,4 @@ if __name__ == '__main__':
         
         grid_cell.connect(gui)
         
-        gui.register_visualizer(analogVisualizer, filters=['grid_cell'])
+        gui.register_visualizer(analogVisualizer, filters=[SpacialDataMessage.dtype])

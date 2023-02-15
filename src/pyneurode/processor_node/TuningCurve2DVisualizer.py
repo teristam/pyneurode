@@ -10,16 +10,12 @@ from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from typing import Any, List, Optional, Union
 from pyneurode.processor_node.Processor import SineTimeSource, Sink
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
-from pyneurode.processor_node.SimGridCellSource import SimGridCellSource
+from pyneurode.processor_node.SimGridCellSource import SimGridCellSource, SpacialDataMessage
 from pyneurode.processor_node.Visualizer import Visualizer
 from pyneurode.processor_node.MountainsortTemplateProcessor import RecomputeTemplateControlMessage
 from scipy.ndimage import gaussian_filter
 
-class SpacialData(Message):
-    def __init__(self, x:np.ndarray, y:np.ndarray, data: np.ndarray, timestamp: Optional[float] = None):
-        data = np.concatenate([x,y,data], axis=1) # first column is x coordinate, second column is y coordinates, the rest are data        
-        super().__init__('spacial_data', data, timestamp)
-        
+
 
 class TuningCurve2DVisualizer(Visualizer):
     '''
@@ -51,28 +47,25 @@ class TuningCurve2DVisualizer(Visualizer):
         self.smooth = True
         self.sel_cell_idx = 0
         self.color_map_scale = None
+        self.cur_position = None
 
     def init_gui(self):
         window_width = 800
+        
         with dpg.window(label=self.name, width=window_width, height=500, tag=self.name):
+                        
             with dpg.group(horizontal=True):
                 with dpg.child_window(width = -200):
-
-                    # with dpg.drawlist(width=500, height=500) as self.canvas:
-                    #         with dpg.draw_node(label = 'animal_position', user_data=0.0):
-                    #             dpg.draw_circle([ 0, 0 ], 10, color=[0, 255,0], fill=[0,255,0])
-                                
-                                
                     values = np.zeros((self.xbin, self.ybin))
                     
                     with dpg.group(horizontal=True):
-                        self.color_map_scale = dpg.add_colormap_scale(min_scale=0, max_scale=self.scale, height=400, colormap=dpg.mvPlotColormap_Hot)
-                        with dpg.plot(label="Heat Series", no_mouse_pos=True, height=-1, width=-1):
+                        self.color_map_scale = dpg.add_colormap_scale(min_scale=0, max_scale=self.scale, height=400, colormap=dpg.mvPlotColormap_Jet)
+                        with dpg.plot(label="Heat Series", no_mouse_pos=True, height=-1, width=-1) as plot:
+
                             dpg.add_plot_axis(dpg.mvXAxis, label="x", lock_min=True, lock_max=True, no_gridlines=True, no_tick_marks=True)
                             with dpg.plot_axis(dpg.mvYAxis, label="y", no_gridlines=True, no_tick_marks=True, lock_min=True, lock_max=True):
                                 self.heatseries = dpg.add_heat_series(values, self.xbin, self.ybin, scale_min=0, scale_max=self.scale, format='')
-                                
-      
+                                dpg.bind_colormap(plot, dpg.mvPlotColormap_Jet)
 
             
                 with dpg.child_window(width = 200) as control_panel:
@@ -96,7 +89,7 @@ class TuningCurve2DVisualizer(Visualizer):
 
                     self.control_panel = control_panel
 
-    def update(self, messages: List[SpacialData]):
+    def update(self, messages: List[SpacialDataMessage]):
         # message data format time x channel
         if self.buffer is None:
             self.buffer = RingBuffer((self.buffer_length, messages[0].data.shape[1]))
@@ -132,7 +125,7 @@ class TuningCurve2DVisualizer(Visualizer):
         
         #update the list box
         dpg.configure_item(self.list_box, items=z_idx, num_items=10)
-        
+
         if self.tuning_curve is None:
             self.tuning_curve = np.zeros((len(z_idx), self.ybin, self.xbin))
             self.bin_n = np.zeros((self.ybin, self.xbin))
@@ -144,12 +137,16 @@ class TuningCurve2DVisualizer(Visualizer):
             
         
         if not self.tuning_curve is None and type(self.sel_cell_idx) is int:
+            curve2display = self.tuning_curve[self.sel_cell_idx,:,:]
+            curX = x[-1]
+            curY = y[-1]
             if self.smooth:
-                smoothed_curve = gaussian_filter(self.tuning_curve[self.sel_cell_idx,:,:], sigma=1)
+                smoothed_curve = gaussian_filter(curve2display, sigma=1)
+                smoothed_curve[curX,curY] = 0 # use to indicate the current position
                 dpg.set_value(self.heatseries, (smoothed_curve,))
-                
             else:
-                dpg.set_value(self.heatseries, (self.tuning_curve[self.sel_cell_idx,:,:],))
+                curve2display[curX, curY] = 0
+                dpg.set_value(self.heatseries, (curve2display,))
             
         
 
@@ -179,7 +176,7 @@ if __name__ == '__main__':
         
         grid_cell.connect(gui)
         
-        gui.register_visualizer(tuningCurve2DVisualizer, filters=['grid_cell'], control_targets=[control])
-        gui.register_visualizer(analogVisualizer, filters=['grid_cell'])
+        gui.register_visualizer(tuningCurve2DVisualizer, filters=[SpacialDataMessage.dtype], control_targets=[control])
+        gui.register_visualizer(analogVisualizer, filters=[SpacialDataMessage.dtype])
 
         
