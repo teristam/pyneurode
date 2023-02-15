@@ -53,6 +53,13 @@ class TuningCurve2DVisualizer(Visualizer):
         window_width = 800
         
         with dpg.window(label=self.name, width=window_width, height=500, tag=self.name):
+            
+            with dpg.theme(tag="plot_theme"):
+                with dpg.theme_component(dpg.mvScatterSeries):
+                    dpg.add_theme_color(dpg.mvPlotCol_Line, (0, 255, 0), category=dpg.mvThemeCat_Plots)
+                    dpg.add_theme_style(dpg.mvPlotStyleVar_Marker, dpg.mvPlotMarker_Circle, category=dpg.mvThemeCat_Plots)
+                    dpg.add_theme_style(dpg.mvPlotStyleVar_MarkerSize, 8, category=dpg.mvThemeCat_Plots)
+
                         
             with dpg.group(horizontal=True):
                 with dpg.child_window(width = -200):
@@ -66,6 +73,9 @@ class TuningCurve2DVisualizer(Visualizer):
                             with dpg.plot_axis(dpg.mvYAxis, label="y", no_gridlines=True, no_tick_marks=True, lock_min=True, lock_max=True):
                                 self.heatseries = dpg.add_heat_series(values, self.xbin, self.ybin, scale_min=0, scale_max=self.scale, format='')
                                 dpg.bind_colormap(plot, dpg.mvPlotColormap_Jet)
+                                
+                                self.cur_position = dpg.add_scatter_series([], [])
+                                dpg.bind_item_theme( self.cur_position, 'plot_theme')
 
             
                 with dpg.child_window(width = 200) as control_panel:
@@ -125,6 +135,10 @@ class TuningCurve2DVisualizer(Visualizer):
         
         #update the list box
         dpg.configure_item(self.list_box, items=z_idx, num_items=10)
+        
+        # plot the current position in the scatter plot
+        # print(x[-1]/self.xbin, y[-1], self.xbin, self.ybin)
+        dpg.set_value(self.cur_position, [[y[-1]/self.ybin], [1-x[-1]/self.xbin]]) # the heatmap axis goes from 0 to 1, and have different orientation
 
         if self.tuning_curve is None:
             self.tuning_curve = np.zeros((len(z_idx), self.ybin, self.xbin))
@@ -138,14 +152,10 @@ class TuningCurve2DVisualizer(Visualizer):
         
         if not self.tuning_curve is None and type(self.sel_cell_idx) is int:
             curve2display = self.tuning_curve[self.sel_cell_idx,:,:]
-            curX = x[-1]
-            curY = y[-1]
             if self.smooth:
                 smoothed_curve = gaussian_filter(curve2display, sigma=1)
-                smoothed_curve[curX,curY] = 0 # use to indicate the current position
                 dpg.set_value(self.heatseries, (smoothed_curve,))
             else:
-                curve2display[curX, curY] = 0
                 dpg.set_value(self.heatseries, (curve2display,))
             
         
