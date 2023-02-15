@@ -123,11 +123,11 @@ class GUIProcessor(BatchProcessor):
         control_msg = []
 
         for msg in messages:
-            if not msg.type in msg_list:
-                msg_list[msg.type] = []
-                msg_list[msg.type].append(msg)
+            if not msg.dtype in msg_list:
+                msg_list[msg.dtype] = []
+                msg_list[msg.dtype].append(msg)
             else:
-                msg_list[msg.type].append(msg)
+                msg_list[msg.dtype].append(msg)
 
         # pass each type of messages to their respective visualizer        
         for msg_type, msgs in msg_list.items():
