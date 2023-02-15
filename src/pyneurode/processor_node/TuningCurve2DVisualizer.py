@@ -137,7 +137,6 @@ class TuningCurve2DVisualizer(Visualizer):
         dpg.configure_item(self.list_box, items=z_idx, num_items=10)
         
         # plot the current position in the scatter plot
-        # print(x[-1]/self.xbin, y[-1], self.xbin, self.ybin)
         dpg.set_value(self.cur_position, [[y[-1]/self.ybin], [1-x[-1]/self.xbin]]) # the heatmap axis goes from 0 to 1, and have different orientation
 
         if self.tuning_curve is None:
