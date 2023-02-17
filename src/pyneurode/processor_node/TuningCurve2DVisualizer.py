@@ -8,6 +8,7 @@ import numpy as np
 import shortuuid
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from typing import Any, List, Optional, Union
+from pyneurode.processor_node.NumpyFileSource import NumpyFileSource, NumpyMessage
 from pyneurode.processor_node.Processor import SineTimeSource, Sink
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 from pyneurode.processor_node.SimGridCellSource import SimGridCellSource, SpacialDataMessage
@@ -173,19 +174,19 @@ if __name__ == '__main__':
 
     with ProcessorContext() as ctx:
 
-        grid_cell = SimGridCellSource(0.02, arena_size = 100, speed=2, firing_field_sd=[10,20,40], grid_spacing=20)
+        # grid_cell = SimGridCellSource(0.02, arena_size = 100, speed=2, firing_field_sd=[10,20,40], grid_spacing=20)
+        grid_cell = NumpyFileSource('data/openfield_cells.npy', interval=0.01,batch_size=100)
         
         tuningCurve2DVisualizer = TuningCurve2DVisualizer('Synchronized signals', scale=10, buffer_length=6000, 
-                                                         xbin=100, ybin=100, xmax=100, ymax=100)
+                                                         xbin=100, ybin=100, xmax=60, ymax=60)
         
         analogVisualizer = AnalogVisualizer('Analog signal')
-        control = DummpyControlSink()
         
         gui = GUIProcessor(internal_buffer_size=5000)
         
         grid_cell.connect(gui)
         
-        gui.register_visualizer(tuningCurve2DVisualizer, filters=[SpacialDataMessage.dtype], control_targets=[control])
-        gui.register_visualizer(analogVisualizer, filters=[SpacialDataMessage.dtype])
+        gui.register_visualizer(tuningCurve2DVisualizer, filters=[NumpyMessage.dtype])
+        gui.register_visualizer(analogVisualizer, filters=[NumpyMessage.dtype])
 
         
