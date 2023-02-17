@@ -55,7 +55,7 @@ class Channel:
         '''
 
         if self.filters is not None:
-            if message.type in self.filters:
+            if message.dtype in self.filters:
                 # the timeout is necessary to avoid the other process shutting down first
                 # and block the current process
                 self.queue.put(message)
