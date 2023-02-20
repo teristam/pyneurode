@@ -49,6 +49,7 @@ class TuningCurve2DVisualizer(Visualizer):
         self.sel_cell_idx = 0
         self.color_map_scale = None
         self.cur_position = None
+        self.log_display = True
 
     def init_gui(self):
         window_width = 800
@@ -96,6 +97,22 @@ class TuningCurve2DVisualizer(Visualizer):
                         dpg.add_text('Cell selection')
                         self.list_box=dpg.add_listbox(label='Cells',items=[], width=-1, num_items=10,
                                 callback=listbox_callback)
+                        
+                        
+                        dpg.add_text('Display mode')
+                        def log_checkbox_callback(sender, log_distribution):
+                            self.log_display = log_distribution
+                            if log_distribution:
+                                dpg.configure_item(self.color_map_scale, min_scale=-10)
+                            else:
+                                dpg.configure_item(self.color_map_scale, min_scale=0)
+                            
+                        dpg.add_checkbox(label='log distribution', default_value=True, callback=log_checkbox_callback)
+                        
+                        def smooth_toggle(sender, smooth_display):
+                            self.smooth = smooth_display
+                            
+                        dpg.add_checkbox(label='Smooth', default_value = True, callback=smooth_toggle)
                         
 
                     self.control_panel = control_panel
@@ -152,6 +169,8 @@ class TuningCurve2DVisualizer(Visualizer):
         
         if not self.tuning_curve is None and type(self.sel_cell_idx) is int:
             curve2display = self.tuning_curve[self.sel_cell_idx,:,:]
+            if self.log_display:
+                curve2display = np.log(curve2display+1e-10) # avoid inf
             if self.smooth:
                 smoothed_curve = gaussian_filter(curve2display, sigma=1)
                 dpg.set_value(self.heatseries, (smoothed_curve,))
