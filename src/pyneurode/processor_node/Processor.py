@@ -296,12 +296,22 @@ class TimeSource(Source):
     def process(self):
         raise NotImplementedError(f'{self.__class__.__name__}.process is not implemented')
 
+class Message1(Message):
+    dtype = 'message1'
+    def __init__(self, data: Any, timestamp: Optional[float] = None):
+        super().__init__(Message1.dtype, data, timestamp)
+        
+class Message2(Message):
+    dtype = 'message2'
+    def __init__(self, data: Any, timestamp: Optional[float] = None):
+        super().__init__(Message1.dtype, data, timestamp)
+            
 class SineTimeSource(TimeSource):
     '''
     A TimeSource that generate multi-channel sine wave for debugging purpose
     '''
     def __init__(self, interval:float, frequency:float, channel_num:int, sampling_frequency:int=100,
-                 noise_std:float=0, scale=1, offset=0):
+                 noise_std:float=0, scale=1, offset=0, msg_type =None):
         super().__init__(interval)
         self.frequency = frequency #in Hz
         self.start_time = time.time()
@@ -311,6 +321,7 @@ class SineTimeSource(TimeSource):
         self.noise_std = noise_std
         self.scale = scale
         self.offset = offset
+        self.msg_type = msg_type
 
     def process(self):
         # Generate a sine waveform
@@ -331,8 +342,14 @@ class SineTimeSource(TimeSource):
             if self.noise_std > 0:
                 # add in noise
                 y += np.random.normal(scale=self.noise_std, size=y.shape)
-            # print(y.shape)
-            return Message('sine', y)
+                
+            if self.msg_type is None:
+                return Message('sine', y)
+            elif self.msg_type =='message1':
+                return Message1(y)
+            else:
+                return Message2(y)
+                                
 
 class DummyTimeSource(TimeSource):
     def startup(self):
