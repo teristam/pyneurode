@@ -44,15 +44,23 @@ class AnalogSignalMerger(BatchProcessor):
                 self.message_type_dict[type(d)].append(d)
         
         
-    
         # At each analysis interval, oversample every message receive so that they are of the same length
         
         # First combine all data of the same type
+        data_incomplete = False
         for i, msg_type in enumerate(self.message_type_list):
             if len(self.message_type_dict[msg_type]) > 0:
                 d = [msg.data for msg in self.message_type_dict[msg_type]]
                 self.data_list[i] = np.concatenate(d)
                 print(f'data_list {i} {self.data_list[i].shape}')
+                self.message_type_dict[msg_type] = [] # clear queue after processing
+            else:
+                print(f'Waiting for {msg_type} to arrive')
+                data_incomplete = True
+        
+        if data_incomplete: # early exist if at least one message type has not arrive, only proceed when all message types have arrived
+            return 
+
         
         # oversample every message receive so that they are of the same length
         max_len = max([x.shape[0] for x in self.data_list])
@@ -74,56 +82,10 @@ class AnalogSignalMerger(BatchProcessor):
         sample_lens = set([len(d) for d in self.data_list])
         assert len(sample_lens) == 1, f'Error: data not of the same length {sample_lens}'      
         data_concat = np.hstack(self.data_list)
-        print(f'data_concat: {data_concat.shape}')
-        
-        # clear the current data
-        for k in self.message_type_dict.keys():
-            self.message_type_dict[k] = []
+        # print(f'data_concat: {data_concat.shape}')
 
         return Message('sync_data', data_concat)
         
-        # if data_concat is not None: 
-        #     if self.adc_buffer is None:
-        #         self.adc_buffer = RingBuffer((self.buffer_length,data_concat.shape[1]))
-        #         self.adc_buffer.write(data_concat) #format should be in time x channel
-        #     else:
-        #         try:
-        #             self.adc_buffer.write(data_concat)
-        #         except ValueError:
-        #             self.log(logging.DEBUG, 'Data shape has changed. Initializing a new buffer')
-        #             self.reset_buffer(adc_channels=data_concat.shape[1])
-        #             self.adc_buffer.write(data_concat)
-                    
-        # msg_data_types = [d.type for d in data]
-        # # self.log(logging.DEBUG, f'Processing data: {Counter(msg_data_types)}')
-
-        # if self.spike_buffer is not None:
-
-        #     if self.ignore_adc:
-        #         curReadHead = self.spike_buffer.absWriteHead
-        #         data2read = curReadHead - self.readHead
-                
-        #         if data2read > 0:
-        #             msg_data = self.spike_buffer.readContinous(data2read)
-        #             self.readHead += data2read
-        #             return Message('synced_data', msg_data)
-  
-        #     else:
-        #         # Find the minimum of the write head, and then send them
-        #         curReadHead = min(self.spike_buffer.absWriteHead, self.adc_buffer.absWriteHead)
-        #         data2read = curReadHead - self.readHead 
-
-        #         if data2read >0:
-
-        #             spike_train_data = self.spike_buffer.readContinous(data2read)
-        #             adc_data = self.adc_buffer.readContinous(data2read)
-
-        #             msg_data = np.hstack([spike_train_data, adc_data])
-
-        #             self.readHead += data2read
-
-        #             return Message('synced_data', msg_data)
-
 
 if __name__ == '__main__':
     start  = time.time()
@@ -131,9 +93,9 @@ if __name__ == '__main__':
     with ProcessorContext() as ctx:
     
         # simulate change of message data shape
-        sine1 = SineTimeSource(0.25, 10, 2, msg_type='message1', sampling_frequency=50)
+        sine1 = SineTimeSource(0.1, 10, 2, msg_type='message1', sampling_frequency=50)
         sine2 = SineTimeSource(0.5, 5, 3, msg_type='message2', sampling_frequency=100)
-        merger = AnalogSignalMerger( [Message1, Message2], interval=1)
+        merger = AnalogSignalMerger( [Message1, Message2], interval=0.4)
         
         gui = GUIProcessor()
         visualizer = AnalogVisualizer('Sync data')
