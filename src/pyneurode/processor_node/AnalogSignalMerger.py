@@ -55,9 +55,12 @@ class AnalogSignalMerger(BatchProcessor):
                 print(f'data_list {i} {self.data_list[i].shape}')
                 self.message_type_dict[msg_type] = [] # clear queue after processing
             else:
-                print(f'Waiting for {msg_type} to arrive')
+                # print(f'Waiting for {msg_type} to arrive')
                 data_incomplete = True
         
+        #TODO seems to have bug messing up the signal frequency when only one message type arrive
+        # now the resampling depends on how fast the data comes in, which may be affected by other factors
+        # this will lead to distortion of the signal after resampling
         if data_incomplete: # early exist if at least one message type has not arrive, only proceed when all message types have arrived
             return 
 
@@ -78,7 +81,6 @@ class AnalogSignalMerger(BatchProcessor):
                         self.data_list[i] = np.pad(self.data_list[i], ((0, max_len-self.data_list[i].shape[0]),(0,0)), mode='maximum')
                 
         # make sure data are now of the same length, and the concatenate them together 
-        #TODO work on the case when one of the data is missing
         sample_lens = set([len(d) for d in self.data_list])
         assert len(sample_lens) == 1, f'Error: data not of the same length {sample_lens}'      
         data_concat = np.hstack(self.data_list)
@@ -95,10 +97,10 @@ if __name__ == '__main__':
         # simulate change of message data shape
         sine1 = SineTimeSource(0.1, 10, 2, msg_type='message1', sampling_frequency=50)
         sine2 = SineTimeSource(0.5, 5, 3, msg_type='message2', sampling_frequency=100)
-        merger = AnalogSignalMerger( [Message1, Message2], interval=0.4)
+        merger = AnalogSignalMerger( [Message1, Message2], interval=0.6)
         
         gui = GUIProcessor()
-        visualizer = AnalogVisualizer('Sync data')
+        visualizer = AnalogVisualizer('Sync data', scale=5)
         gui.register_visualizer(visualizer,['sync_data'])
         
         sink = EchoSink()
