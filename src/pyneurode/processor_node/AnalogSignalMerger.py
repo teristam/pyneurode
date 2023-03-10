@@ -4,18 +4,16 @@ import time
 from collections import Counter
 
 import numpy as np
-from pyneurode.processor_node.ADCFileReaderSource import ADCFileReaderSource
+from scipy import signal
+
 from pyneurode.processor_node.AnalogVisualizer import AnalogVisualizer
 from pyneurode.processor_node.BatchProcessor import BatchProcessor
-from pyneurode.processor_node.FileReaderSource import FileReaderSource
 from pyneurode.processor_node.GUIProcessor import GUIProcessor
 from pyneurode.processor_node.Message import Message
 from pyneurode.processor_node.Processor import *
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
-from pyneurode.processor_node.TemplateMatchProcessor import SpikeTrainMessage
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
-from pyneurode.RingBuffer.RingBufferG import RingBufferG
-from scipy import signal
+
 
 class AnalogSignalMerger(BatchProcessor):
     '''
@@ -96,7 +94,7 @@ class AnalogSignalMerger(BatchProcessor):
 
             self.read_head += data2read
 
-            return Message('sync_data', msg_data)
+            return Message('synced_data', msg_data)
 
         
 
@@ -112,7 +110,7 @@ if __name__ == '__main__':
         
         gui = GUIProcessor()
         visualizer = AnalogVisualizer('Sync data', scale=5)
-        gui.register_visualizer(visualizer,['sync_data'])
+        gui.register_visualizer(visualizer,['synced_data'])
         
         sink = EchoSink()
         
