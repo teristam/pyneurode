@@ -222,7 +222,7 @@ class SpikeTrainMessage(Message):
     """Message that contains the binned spike train
     spiketrain is in the format (neuron x time)
     """
-    type = 'spike_train'
+    dtype = 'spike_train'
 
     def __init__(self, spk_train:np.ndarray):
         
