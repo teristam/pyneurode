@@ -20,13 +20,13 @@ from pyneurode.processor_node.ProcessorContext import ProcessorContext
 
 
 class ADCMessage(Message):
-    type = 'adc_message'
+    dtype = 'adc_message'
     def __init__(self, data: np.ndarray, timestamp: Optional[float] = None):
         '''
         data should be in the form of time x channel
         '''
         assert isinstance(data, np.ndarray), "Error, data must be a np.ndarray"
-        super().__init__(self.type, data, timestamp)
+        super().__init__(self.dtype, data, timestamp)
 
 
 

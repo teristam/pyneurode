@@ -24,11 +24,12 @@ class MetricsMessage(Message):
     '''
     Message that contains metrics information
     '''
-    type = 'metrics'
+    dtype = 'metrics'
     
     def __init__(self, processor:str, measures:dict):
-        self.data = {
+        data = {
             'processor': processor,
             'measures':measures
         }
+        super().__init__(self.dtype, data)
     

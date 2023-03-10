@@ -79,7 +79,7 @@ class TemplateMatchProcessor(BatchProcessor):
                 self.membership_models = m.data['membership_models']
                 self.buffer_is_valid = False # refresh the buffer
                 self.template_update_id += 1
-            elif m.type == 'spike':
+            elif m.dtype == 'spike':
                 data.append(m.data)
 
         self.spike_data = self.spike_data + data
@@ -179,7 +179,7 @@ class SpikeTrainMessage(Message):
         self.timestamp = time.time()
 
 class SortedSpikeMessage(Message):
-    type = 'df_sort'
+    dtype = 'df_sort'
     
     def __init__(self, sorted_dataframe:pd.DataFrame):
         

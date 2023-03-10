@@ -234,7 +234,7 @@ class SpikeTrainMessage(Message):
         self.timestamp = time.time()
 
 class SortedSpikeMessage(Message):
-    type = 'df_sort'
+    dtype = 'df_sort'
     
     def __init__(self, sorted_dataframe:pd.DataFrame):
         

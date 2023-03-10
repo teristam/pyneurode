@@ -87,7 +87,7 @@ class MountainsortTemplateProcessor(BatchProcessor):
             if type(m) is RecomputeTemplateControlMessage:
                 self.log(logging.DEBUG, f'Received re-sort command.')
                 need_sort = True
-            elif m.type == 'spike':
+            elif m.dtype == 'spike':
                 data.append(m.data)
         
         # self.spike_data = self.spike_data + data 

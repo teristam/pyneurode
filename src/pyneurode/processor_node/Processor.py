@@ -55,7 +55,8 @@ class Channel:
         '''
 
         if self.filters is not None:
-            if message.dtype in self.filters:
+            dtype = message.type if hasattr(message,'type') else message.dtype # for compatibility with old message format
+            if dtype in self.filters:
                 # the timeout is necessary to avoid the other process shutting down first
                 # and block the current process
                 self.queue.put(message)
@@ -475,7 +476,7 @@ class FileEchoSource(TimeSource):
             
             # modify the acquire_time so that we can measure the latency
             for m in msg:
-                if m.type == 'spike':
+                if m.dtype == 'spike':
                     m.data.acq_timestamp = utils.perf_counter()
 
             if self.verbose:
