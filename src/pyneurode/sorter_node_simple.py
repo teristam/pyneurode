@@ -24,7 +24,7 @@ if  __name__ == '__main__':
     start  = time.time()
     echofile = FileEchoSink.get_temp_filename()
 
-    with ProcessorContext() as ctx:
+    with ProcessorContext(auto_start=False) as ctx:
 
         sineWave = SineTimeSource(0.1,frequency = 12.3, channel_num=10, sampling_frequency=100)
         scaleProcessor = ScaleProcessor(4,5)
@@ -36,9 +36,11 @@ if  __name__ == '__main__':
         sineWave.connect(scaleProcessor)
         scaleProcessor.connect(gui,'sine')
 
-        ctx.register_processors(sineWave, scaleProcessor, gui)
+        # ctx.start()
         
-        ctx.start()
+        
+      
+    
         
         
         
