@@ -117,8 +117,11 @@ class TuningCurve2DVisualizer(Visualizer):
 
                     self.control_panel = control_panel
 
-    def update(self, messages: List[SpacialDataMessage]):
+    def update(self, messages: List[Message]):
         # message data format time x channel
+        # it assume the data is a numpy array, with the first 2 channel corresponding
+        # to x and y coordinate respectively. The other channel are neural data
+        
         if self.buffer is None:
             self.buffer = RingBuffer((self.buffer_length, messages[0].data.shape[1]))
         
@@ -143,7 +146,7 @@ class TuningCurve2DVisualizer(Visualizer):
         # update the plot
 
         # Re-arrange the data to be suitable for plotting
-        data = self.buffer.readLatest(50)
+        data = self.buffer.readLatest(50) #TODO: should use all data point instead
         
         # bin the x and y position
         x = np.clip(np.floor(data[:,0]/self.xbinsize), 0, self.xbin-1).astype(int)
