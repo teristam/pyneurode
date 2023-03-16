@@ -17,18 +17,24 @@ from pyneurode.RingBuffer.RingBuffer import RingBuffer
 
 class AnalogSignalMerger(BatchProcessor):
     '''
-    Synchronize two source of analoge signal. The lower-sampled signal will be upsampled. The two input message must of different type 
+    Class AnalogSignalMerger synchronizes two sources of an analog signal. The lower-sampled signal will be upsampled to match the other source’s data rate. 
     The data of the input message must be a numpy array  
-
-    This class synchronizes two sources of an analog signal. The lower-sampled signal will be upsampled to match the other source’s data rate.
     '''
 
-    
     def __init__(self, message_type_info:Dict[Message, Tuple[int,int]],
                  interval:float=0.001, internal_buffer_size:int=10000,
                  verbose:bool=True, resample_method:str='resample_poly'):
-        # format of message_list: Dict(message_type, Tuple(up, down)
-        # resample method can be resamply_poly, or upfirdn
+        '''
+        Args:
+            message_type_info (Dict[Message, Tuple[int,int]]): A dictionary of messages each containing information on its up and down sampling rates.
+            interval (float): Time difference between function calls in seconds. Defaults to 0.001
+            internal_buffer_size(int): The size of ring buffer. Defaults to 10000.
+            verbose(bool): If True enables logging, else disables. Defaults to True.
+            resample_method(str): Resampling method to be used. Can be 'resample_poly' or 'upfirdn'. Defaults to 'resample_poly'.
+            
+        '''
+        
+        
         super().__init__(interval, internal_buffer_size, verbose)
         self.message_type_info = message_type_info # store the type of the message that we can receive
         self.message_type_dict = {k:[] for k in message_type_info.keys()} # dictionary of list that store the incoming messages
@@ -102,7 +108,6 @@ class AnalogSignalMerger(BatchProcessor):
                 # self.log(logging.DEBUG, f'{data} {msg_type} {self.data_list[msg_type].absWriteHead}')
                 
             msg_data = np.hstack(spike_train_data)
-            # self.log(logging.DEBUG, msg_data.sum(axis=0))
 
             self.read_head += data2read
 
