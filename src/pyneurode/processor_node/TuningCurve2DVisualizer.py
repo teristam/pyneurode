@@ -149,8 +149,9 @@ class TuningCurve2DVisualizer(Visualizer):
         data = self.buffer.readLatest(50) #TODO: should use all data point instead
         
         # bin the x and y position
-        x = np.clip(np.floor(data[:,0]/self.xbinsize), 0, self.xbin-1).astype(int)
-        y = np.clip(np.floor(data[:,1]/self.ybinsize), 0, self.ybin-1).astype(int)
+        # if data contains NaN, casting to int directly will lead to error
+        x = np.clip(np.floor(data[:,0]/self.xbinsize), 0, self.xbin-1)
+        y = np.clip(np.floor(data[:,1]/self.ybinsize), 0, self.ybin-1)
         z_idx = list(range(data.shape[1]-2))
         z =  data[:, 2:]
         
@@ -164,10 +165,13 @@ class TuningCurve2DVisualizer(Visualizer):
             self.tuning_curve = np.zeros((len(z_idx), self.ybin, self.xbin))
             self.bin_n = np.zeros((self.ybin, self.xbin))
         
+
         for i in range(data.shape[0]):
             # Average is always sum(x)/x_n
-            self.tuning_curve[:, x[i], y[i]] = (self.bin_n[x[i], y[i]]*self.tuning_curve[:, x[i], y[i]] + z[i,:])/(self.bin_n[x[i], y[i]]+1)
-            self.bin_n[x[i], y[i]] += 1
+            if not np.isnan(x[i]) and not np.isnan(y[i]):
+                x_pos, y_pos = int(x[i]), int(y[i])
+                self.tuning_curve[:, x_pos, y_pos] = (self.bin_n[x_pos, y_pos]*self.tuning_curve[:, x_pos, y_pos] + z[i,:])/(self.bin_n[x_pos, y_pos]+1)
+                self.bin_n[x_pos, y_pos] += 1
             
         
         if not self.tuning_curve is None and type(self.sel_cell_idx) is int:

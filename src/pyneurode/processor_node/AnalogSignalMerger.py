@@ -51,8 +51,6 @@ class AnalogSignalMerger(BatchProcessor):
 
         # prcoess each message
         for d in data:
-            # self.log(logging.DEBUG, type(d))
-            # self.log(logging.DEBUG, d.data)
             if type(d) in self.message_type_dict:
                 self.message_type_dict[type(d)].append(d)
         

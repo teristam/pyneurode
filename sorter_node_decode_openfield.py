@@ -16,6 +16,8 @@ from pyneurode.processor_node.SpikeClusterVisualizer import \
     SpikeClusterVisualizer
 from pyneurode.processor_node.TemplateMatchProcessor import \
     SpikeTrainMessage, TemplateMatchProcessor, TemplateMatchProcessor
+from pyneurode.processor_node.TuningCurve2DVisualizer import TuningCurve2DVisualizer
+from pyneurode.processor_node.ZmqSource import ZmqSource
 
 '''
 GUI design architecture:
@@ -52,15 +54,12 @@ if  __name__ == '__main__':
         templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,
                 min_num_spikes=1000, training_period=None)
         templateMatchProcessor = TemplateMatchProcessor(interval=0.01,time_bin=0.01)
-        signalMerger =  AnalogSignalMerger( {SpikeTrainMessage:(1,1), ADCMessage:(2,1)}, interval=0.1)
+        signalMerger =  AnalogSignalMerger({ADCMessage:(2,1), SpikeTrainMessage:(1,1)}, interval=0.1)
 
         gui = GUIProcessor(internal_buffer_size=5000)
         # packet_save = FileEchoSink(f'data/openfield_packets.pkl')
         # zmqSource.connect(packet_save)
-
-
-        #potential bug: when it takes too long to acquire the spikes, the syncdata buffer may overflow
-
+        
         zmqSource.connect(templateTrainProcessor, filters='spike')
         zmqSource.connect(templateMatchProcessor, filters='spike')
 
@@ -73,15 +72,18 @@ if  __name__ == '__main__':
         oscSource.connect(gui, [ADCMessage.dtype])
         signalMerger.connect(gui)
         templateMatchProcessor.connect(gui, ['df_sort','metrics'])
-        #TODO: bug : spiket train seem to be zero
+
 
         analog_visualizer = AnalogVisualizer('Synchronized signals',scale=20, buffer_length=6000)
         pos_visualizer = AnalogVisualizer('pos', buffer_length=6000)
         cluster_vis = SpikeClusterVisualizer('cluster_vis')
         latency_vis = LatencyVisualizer('latency')
+        tuningCurve2DVisualizer = TuningCurve2DVisualizer('Rate map', scale=10, buffer_length=6000, 
+                                                         xbin=100, ybin=100, xmax=500, ymax=500)
 
 
         gui.register_visualizer(analog_visualizer, filters=['synced_data'])
         gui.register_visualizer(pos_visualizer, filters=[ADCMessage.dtype])
         gui.register_visualizer(cluster_vis, filters=['df_sort'])
         gui.register_visualizer(latency_vis, filters=['metrics'])
+        gui.register_visualizer(tuningCurve2DVisualizer, filters=['synced_data'])
