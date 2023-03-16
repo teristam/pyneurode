@@ -45,6 +45,8 @@ class AnalogSignalMerger(BatchProcessor):
 
         # prcoess each message
         for d in data:
+            # self.log(logging.DEBUG, type(d))
+            # self.log(logging.DEBUG, d.data)
             if type(d) in self.message_type_dict:
                 self.message_type_dict[type(d)].append(d)
         
@@ -68,14 +70,17 @@ class AnalogSignalMerger(BatchProcessor):
                     d = signal.upfirdn(h, d, up, down,axis=0)
         
                 
-                # print(f'{msg_type} : {d.shape=}')
+                # self.log(logging.DEBUG, f'{msg_type} : {d.shape=}')
                 
                 # write to ring buffer
                 if self.data_list[msg_type] is None:
+                    self.log(logging.DEBUG, 'creating new ring buffer')
                     self.data_list[msg_type] = RingBuffer((self.internal_buffer_size, d.shape[1]))
                 
+                # self.log(logging.DEBUG, f'{d.sum(axis=0)=} {msg_type}')
                 self.data_list[msg_type].write(d)
-                
+                # self.log(logging.DEBUG, f'{self.data_list[msg_type].buffer.sum(axis=0)} {msg_type}')
+
                 self.message_type_dict[msg_type] = [] # clear queue after processing
 
         # make sure all ring buffer is initiated before procedding
@@ -87,10 +92,17 @@ class AnalogSignalMerger(BatchProcessor):
         data2read = curReadHead - self.read_head 
 
         if data2read >0:
+            buf_size =[buffer.buffer.sum(axis=0) for buffer in self.data_list.values()]
+            spike_train_data = []
+            
+            for msg_type in self.message_type_dict.keys():
+                data = self.data_list[msg_type].readContinous(data2read)
+                spike_train_data.append(data)
 
-            spike_train_data = [buffer.readContinous(data2read) for buffer in self.data_list.values()]
-
+                # self.log(logging.DEBUG, f'{data} {msg_type} {self.data_list[msg_type].absWriteHead}')
+                
             msg_data = np.hstack(spike_train_data)
+            # self.log(logging.DEBUG, msg_data.sum(axis=0))
 
             self.read_head += data2read
 
