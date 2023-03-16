@@ -25,7 +25,7 @@
       <Expression xsi:type="io:CsvReader">
         <io:FileName>E:\open-ephys-testdata\M4_D26-binary\tracking_position.csv</io:FileName>
         <io:ListSeparator />
-        <io:ScanPattern>%s %f %f %f %f %i </io:ScanPattern>
+        <io:ScanPattern>%s %f %f %f %f %i</io:ScanPattern>
         <io:SkipRows>0</io:SkipRows>
       </Expression>
       <Expression xsi:type="scr:ExpressionTransform">
