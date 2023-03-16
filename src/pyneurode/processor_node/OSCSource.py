@@ -85,11 +85,11 @@ if __name__ == '__main__':
         
         gui = GUIProcessor()
         visualizer = AnalogVisualizer('OSC data', buffer_length=1000)
-        gui.register_visualizer(visualizer, [ADCMessage.type])
+        gui.register_visualizer(visualizer, [ADCMessage.dtype])
     
-        echoSink = EchoSink()
-        # osc_source.connect(echoSink)
+        echoSink = EchoSink(print_metrics=True, print_data=False)
         osc_source.connect(gui)
+        osc_source.connect(echoSink)
 
             
             

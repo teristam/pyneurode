@@ -397,9 +397,28 @@ class ScaleProcessor(Processor):
 
 class EchoSink(Sink):
     """ Simply print the message it receives
+    Also provide some measurement about the speed of message arriving
     """
+    def __init__(self, print_metrics=False, print_data=True, report_period=1):
+        super().__init__()
+        self.print_metrics = print_metrics
+        self.print_data= print_data
+        self.msg_count = 0
+        self.report_freqency = report_period
+        self.last_report_time = time.time()
+        
     def process(self,data):
-        self.log(logging.INFO, f'Printing {data}')
+        if self.print_data:
+            self.log(logging.INFO, f'Printing {data}')
+            
+        self.msg_count +=1
+        
+        if self.print_metrics and (time.time()- self.last_report_time)>self.report_freqency:
+            # calculate the message rate
+            self.log(logging.DEBUG, f'Message rate: {self.msg_count/(time.time()-self.last_report_time):.2f}')
+            self.msg_count = 0
+            self.last_report_time = time.time()
+        
         
         
 class DummpyNumpyTimeSource(TimeSource):
