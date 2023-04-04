@@ -53,7 +53,7 @@ if  __name__ == '__main__':
                                 filetype='message',batch_size=3)
         
         # zmqSource = ZmqSource(adc_channel=20,time_bin = 0.01)
-        templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,min_num_spikes=2000, training_period=None)
+        templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,min_num_spikes=500, training_period=None)
         templateMatchProcessor = TemplateMatchProcessor(interval=0.01,time_bin=0.01)
         syncDataProcessor = SyncDataProcessor(interval=0.02)
         analogControl = AnalogTriggerControl("Trigger control", message2send=msg, hysteresis=1)

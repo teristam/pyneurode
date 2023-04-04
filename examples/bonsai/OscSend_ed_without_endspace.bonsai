@@ -19,7 +19,7 @@
       <Expression xsi:type="Combinator">
         <Combinator xsi:type="rx:Timer">
           <rx:DueTime>PT0S</rx:DueTime>
-          <rx:Period>PT0.02S</rx:Period>
+          <rx:Period>PT0.033S</rx:Period>
         </Combinator>
       </Expression>
       <Expression xsi:type="io:CsvReader">

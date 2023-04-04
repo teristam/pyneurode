@@ -42,23 +42,23 @@ if  __name__ == '__main__':
         #TODO: need some way to query the output type of processor easily
 
         # reading too fast may overflow the pipe
-        zmqSource = FileEchoSource(interval=0.01, filename='data/openfield_packets.pkl', 
-                                filetype='message',batch_size=3)
+        # zmqSource = FileEchoSource(interval=0.01, filename='data/openfield_packets.pkl', 
+        #                         filetype='message',batch_size=3)
         
-        # zmqSource = ZmqSource(time_bin = 0.01)
+        zmqSource = ZmqSource(time_bin = 0.01)
         oscSource  =  OSCSource('127.0.0.1', 2323, '/data')
 
         # zmqSource = FileEchoSource(interval=0.02, filename='E:\decoder_test_data\JM8_2022-09-03_16-57-23_test1\JM8_20220903_165714_9b0440_packets.pkl', 
         #                         filetype='message',batch_size=3)
         
         templateTrainProcessor = MountainsortTemplateProcessor(interval=0.01,
-                min_num_spikes=1000, training_period=None)
+                min_num_spikes=4000, training_period=None)
         templateMatchProcessor = TemplateMatchProcessor(interval=0.01,time_bin=0.01)
-        signalMerger =  AnalogSignalMerger({ADCMessage:(2,1), SpikeTrainMessage:(1,1)}, interval=0.1)
+        signalMerger =  AnalogSignalMerger({ADCMessage:(10,3), SpikeTrainMessage:(1,1)}, interval=0.1)
 
         gui = GUIProcessor(internal_buffer_size=5000)
-        # packet_save = FileEchoSink(f'data/openfield_packets.pkl')
-        # zmqSource.connect(packet_save)
+        packet_save = FileEchoSink(f'data/openfield_packets_231603.pkl')
+        zmqSource.connect(packet_save)
         
         zmqSource.connect(templateTrainProcessor, filters='spike')
         zmqSource.connect(templateMatchProcessor, filters='spike')
@@ -79,7 +79,7 @@ if  __name__ == '__main__':
         cluster_vis = SpikeClusterVisualizer('cluster_vis')
         latency_vis = LatencyVisualizer('latency')
         tuningCurve2DVisualizer = TuningCurve2DVisualizer('Rate map', scale=10, buffer_length=6000, 
-                                                         xbin=100, ybin=100, xmax=500, ymax=500)
+                                                         xbin=100, ybin=100, xmax=400, ymax=400)
 
 
         gui.register_visualizer(analog_visualizer, filters=['synced_data'])
