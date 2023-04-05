@@ -15,7 +15,6 @@ from sklearn.preprocessing import StandardScaler
 from tqdm.auto import tqdm
 import time
 from isosplit5 import isosplit5
-from mountainsort4.ms4alg import branch_cluster
 from scipy import spatial
 import warnings
 from .spike_sorter_cy import align_spike_cy
