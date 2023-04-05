@@ -45,15 +45,15 @@ if  __name__ == '__main__':
         templateMatchProcessor = TemplateMatchProcessor(interval=0.01,time_bin=0.01)
         syncDataProcessor = SyncDataProcessor(interval=0.02, ignore_adc=True)
         gui = GUIProcessor(internal_buffer_size=5000)
-        spike2arduino = Spike2ArduinoTriggerProcessor([3], [13])
-        arduinoSink = ArduinoTriggerSink("COM5")
+        # spike2arduino = Spike2ArduinoTriggerProcessor([3], [13])
+        # arduinoSink = ArduinoTriggerSink("COM5")
 
         source.connect(templateTrainProcessor, filters='spike')
         source.connect(templateMatchProcessor, filters='spike')
         templateTrainProcessor.connect(templateMatchProcessor)
         templateMatchProcessor.connect(syncDataProcessor)
-        templateMatchProcessor.connect(spike2arduino)
-        spike2arduino.connect(arduinoSink)
+        # templateMatchProcessor.connect(spike2arduino)
+        # spike2arduino.connect(arduinoSink)
         source.connect(syncDataProcessor, 'adc_data')
 
         source.connect(gui, 'adc_data')
@@ -73,7 +73,5 @@ if  __name__ == '__main__':
         gui.register_visualizer(cluster_vis, filters=['df_sort'], control_targets=templateTrainProcessor)
         gui.register_visualizer(latency_vis, filters=['metrics'])
 
-        
-        # ctx.start()
-        
+                
         node_editor.init_node_editor(ctx)

@@ -7,10 +7,12 @@ import numpy as np
 import shortuuid
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from typing import List, Union
-from pyneurode.processor_node.Processor import SineTimeSource, Sink
+from pyneurode.processor_node.Processor import Sink
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 from pyneurode.processor_node.Visualizer import Visualizer
 from pyneurode.processor_node.MountainsortTemplateProcessor import RecomputeTemplateControlMessage
+from pyneurode.processor_node.SineTimeSource import SineTimeSource
+
 
 class AnalogVisualizer(Visualizer):
     '''
