@@ -67,21 +67,41 @@ class NodeManager():
            
                         
     def link_callback(self, sender,app_data):
-        print(f'Connecting {app_data[0]} and {app_data[1]}')
-        dpg.add_node_link(app_data[0], app_data[1], parent=sender)    
+        attr1, attr2 = app_data
+        print(f'Connecting {attr1} and {attr2}')
+        dpg.add_node_link(attr1, attr2, parent=sender)    
         
         #Find the corresponding proccessor and connect them together
-        proc0_name, proc0_type = self.find_processor_from_attr(app_data[0])
-        proc1_name, proc1_type = self.find_processor_from_attr(app_data[1])
+        proc1_name, proc1_type = self.find_processor_from_attr(attr1)
+        proc2_name, proc2_type = self.find_processor_from_attr(attr2)
         
-        if proc0_type =='input':
-            input = self.context.get_processor(proc0_name)
-            output = self.context.get_processor(proc1_name)
+        if proc1_type =='input':
+            input = self.context.get_processor(proc1_name)
+            output = self.context.get_processor(proc2_name)
             input.connect(output)
         else:
-            output = self.context.get_processor(proc0_name)
-            input = self.context.get_processor(proc1_name)
+            output = self.context.get_processor(proc1_name)
+            input = self.context.get_processor(proc2_name)
             input.connect(output)
+    
+    def delink_callback(self, sender, link):
+        link_info = dpg.get_item_configuration(link)
+        attr_1 = link_info['attr_1']
+        attr_2 = link_info['attr_2']
+        
+        proc1_name, proc1_type = self.find_processor_from_attr(attr_1)
+        proc2_name, proc2_type = self.find_processor_from_attr(attr_2)
+        
+        if proc1_type =='input':
+            input = self.context.get_processor(proc1_name)
+            output = self.context.get_processor(proc2_name)
+            input.disconnect(output)
+        else:
+            output = self.context.get_processor(proc1_name)
+            input = self.context.get_processor(proc2_name)
+            input.disconnect(output)
+            
+        dpg.delete_item(link)
     
     def find_processor_from_attr(self, attr):
         # find the processor that has  that attribute
@@ -98,15 +118,12 @@ class NodeManager():
         
         raise ValueError(f'Cannot find the provided attributes {attr}')
 
-    def delink_callback(self, sender, app_data):
-        print('disconnecting')
-        dpg.delete_item(app_data)  
 
     def init_node_editor(self, ctx:ProcessorContext):
         dpg.create_context()
         print('Building nodes')
-        with dpg.window(label="Node editor", width=1000, height=400):
-            with dpg.node_editor(width=-1, callback=self.link_callback, delink_callback=self.delink_callback):
+        with dpg.window(label="Node editor", width=1200, height=1200):
+            with dpg.node_editor(width=-1, height=-1, callback=self.link_callback, delink_callback=self.delink_callback):
 
                 idx = 0
                 # Find all processors in context and build node for them
@@ -142,7 +159,7 @@ class NodeManager():
                 layout -= layout.min(axis=0)
                 layout += 0.2 # padding
                 
-                print(layout)
+                # print(layout)
                 # update the node position with the layout
                 scale = 350
                 for k, v in self.nodes.items():

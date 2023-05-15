@@ -129,6 +129,11 @@ class Processor(Context):
     def connect(self, to_processor:Processor, filters=None):
         self.log(logging.DEBUG, f'Connecting {self.proc_name} and {to_processor.proc_name}')
         self.out_queues[to_processor.proc_name] = Channel(to_processor.in_queue, filters)
+        
+    def disconnect(self, to_processor:Processor):
+        self.out_queues.pop(to_processor.proc_name, None)
+        self.log(logging.DEBUG, f'{to_processor.proc_name} removed from connection')
+            
 
     def send(self, data:Union[Message, List[Message]], output_name:str=None):
         # output the data to downstream queue specified by the output_name (if specified)
