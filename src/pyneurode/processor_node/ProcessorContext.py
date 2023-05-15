@@ -52,6 +52,11 @@ class ProcessorContext(Context):
             p.start()
             self.subprocs.append(p)
             
+            
+    def get_processor(self, name) -> Processor:
+        #return a processor
+        return self.processors[name]
+            
     
     def __exit__(self, exc_type, exc_value, exc_tb):
         super().__exit__(exc_type, exc_value, exc_tb)
