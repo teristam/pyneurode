@@ -1,12 +1,13 @@
+from pathlib import Path
 import dearpygui.dearpygui as dpg
 from pyneurode.processor_node.Processor import *
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 import inspect
 from pyneurode.processor_node.GUIProcessor import GUIProcessor
 import igraph as ig
- 
+import inspect
 import logging
-
+import importlib
 
 class NodeManager():
     def __init__(self, context_manager) -> None:
@@ -118,11 +119,74 @@ class NodeManager():
         
         raise ValueError(f'Cannot find the provided attributes {attr}')
 
+    def play(self):
+        self.context.start()
+        
+    def stop(self):
+        self.context.stop()
+       
+        #TODO the following doesn't work, because it is going to destry to local window first 
+        #close visualizer windows
+        # for k, proc in self.context.processors.items():
+        #     print(proc)
+        #     if isinstance(proc, GUIProcessor):
+        #         proc.shutdown()
 
+    
+    def get_available_processors(self):
+        files = [f for f in os.listdir('src/pyneurode/processor_node') if f.endswith('.py')]
+        class_names = set()
+        for f in files:
+            module_name = Path(f).stem
+            module = importlib.import_module('pyneurode.processor_node.'+module_name)
+            for obj_name, obj in inspect.getmembers(module, inspect.isclass):
+                if issubclass(obj, Processor):
+                    class_names.add(obj_name)
+        
+        return class_names
+    
+    
+    def build_nodes_tree(self):
+        nodes_name = self.get_available_processors()
+        nodes2remove = set()
+        with dpg.tree_node(label = 'Source', default_open=True):
+            for name in nodes_name:
+                if name.endswith('Source'):
+                    with dpg.group():
+                        dpg.add_button(label = name)
+                        nodes2remove.add(name)
+                        
+        nodes_name = nodes_name - nodes2remove
+        nodes2remove.clear()
+        
+        with dpg.tree_node(label = 'Sink', default_open=True):
+            for name in nodes_name:
+                if name.endswith('Sink'):
+                    with dpg.group():
+                        dpg.add_button(label = name)
+                        nodes2remove.add(name)
+                        
+        nodes_name = nodes_name - nodes2remove
+        nodes2remove.clear()
+
+        with dpg.tree_node(label = 'Transformer', default_open=True):
+            for name in nodes_name:
+                with dpg.group():
+                    dpg.add_button(label = name)
+        
+        
     def init_node_editor(self, ctx:ProcessorContext):
         dpg.create_context()
         print('Building nodes')
+        
+        with dpg.window(label='Nodes', width=400, height=-1):
+            self.build_nodes_tree()
+                    
         with dpg.window(label="Node editor", width=1200, height=1200):
+            with dpg.group(horizontal=True):
+                dpg.add_button(label='Play', callback=self.play)
+                dpg.add_button(label='Stop', callback=self.stop)
+                
             with dpg.node_editor(width=-1, height=-1, callback=self.link_callback, delink_callback=self.delink_callback):
 
                 idx = 0

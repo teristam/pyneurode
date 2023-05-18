@@ -43,6 +43,7 @@ class ProcessorContext(Context):
             self.processors[p.proc_name] = p
 
     def start(self):
+        self.shutdown_event.clear()
 
         # spwan the subprocess and start the processing
         for k, proc in self.processors.items():
@@ -52,6 +53,9 @@ class ProcessorContext(Context):
             p.start()
             self.subprocs.append(p)
             
+    def stop(self):
+        self.shutdown_event.set()
+
             
     def get_processor(self, name) -> Processor:
         #return a processor
