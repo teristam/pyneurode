@@ -9,7 +9,8 @@ import shortuuid
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from typing import Any, List, Optional, Union
 from pyneurode.processor_node.NumpyFileSource import NumpyFileSource, NumpyMessage
-from pyneurode.processor_node.Processor import SineTimeSource, Sink
+from pyneurode.processor_node.Processor import Sink
+from pyneurode.processor_node.SineTimeSource import SineTimeSource
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 from pyneurode.processor_node.SimGridCellSource import SimGridCellSource, SpacialDataMessage
 from pyneurode.processor_node.Visualizer import Visualizer

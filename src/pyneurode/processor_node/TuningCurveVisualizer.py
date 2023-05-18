@@ -7,7 +7,8 @@ from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from pyneurode.processor_node.AnalogVisualizer import AnalogVisualizer, DummpyControlSink
 from pyneurode.processor_node.GUIProcessor import GUIProcessor
 from pyneurode.processor_node.Message import Message
-from pyneurode.processor_node.Processor import MsgTimeSource, SineTimeSource
+from pyneurode.processor_node.Processor import MsgTimeSource
+from pyneurode.processor_node.SineTimeSource import SineTimeSource
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 import dearpygui.dearpygui as dpg
 
