@@ -8,7 +8,7 @@ class SineTimeSource(TimeSource):
     '''
     A TimeSource that generate multi-channel sine wave for debugging purpose
     '''
-    def __init__(self, interval:float, frequency:float, channel_num:int, sampling_frequency:int=100,
+    def __init__(self, interval:float=10, frequency:float=10, channel_num:int=2, sampling_frequency:int=100,
                  noise_std:float=0, scale:float=1, offset:float=0, msg_type:float =None):
         super().__init__(interval)
         self.frequency = frequency #in Hz
