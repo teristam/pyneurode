@@ -106,6 +106,13 @@ class NodeManager():
             input.disconnect(output)
             
         dpg.delete_item(link)
+        
+    def on_delete_keypress(self):
+        for node in dpg.get_selected_nodes(self.node_editor):
+            node_name = dpg.get_item_label(node)
+            dpg.delete_item(node)
+            self.context.remove_processors(node_name)
+            
     
     def find_processor_from_attr(self, attr):
         # find the processor that has  that attribute
@@ -175,7 +182,7 @@ class NodeManager():
             for name in nodes_name:
                 if name.endswith('Sink'):
                     with dpg.group():
-                        dpg.add_button(label = name)
+                        dpg.add_button(label = name, callback=self.add_node,  user_data=name)
                         nodes2remove.add(name)
                         
         nodes_name = nodes_name - nodes2remove
@@ -184,7 +191,7 @@ class NodeManager():
         with dpg.tree_node(label = 'Transformer', default_open=True):
             for name in nodes_name:
                 with dpg.group():
-                    dpg.add_button(label = name)
+                    dpg.add_button(label = name, callback=self.add_node,  user_data=name)
                     
         
     def init_node_editor(self, ctx:ProcessorContext):
@@ -244,8 +251,10 @@ class NodeManager():
                     pos = layout[self.nodes_idx[k]]
                     dpg.set_item_pos(v[2], pos*scale) #node object
                     
-                        
-
+                    
+        # register global event
+        with dpg.handler_registry():
+            dpg.add_key_press_handler(key=dpg.mvKey_Delete, callback=self.on_delete_keypress)
         
         dpg.create_viewport(title='Custom Title', width=800, height=600)
         dpg.setup_dearpygui()

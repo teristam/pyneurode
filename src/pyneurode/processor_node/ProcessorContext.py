@@ -41,6 +41,11 @@ class ProcessorContext(Context):
         for p in args:
             p.init_context(self)
             self.processors[p.proc_name] = p
+            
+    def remove_processors(self, *args:Processor):
+        for p in args:
+            self.processors.pop(p)
+            self.log(logging.DEBUG, f'Removed {p} from context')
 
     def start(self):
         self.shutdown_event.clear()
