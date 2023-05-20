@@ -14,14 +14,17 @@ class NodeManager():
         self.context:ProcessorContext = context_manager
         self.nodes = {} # a dictionary containing the tuple of (input, output, node), the key is the processor name 
         self.nodes_idx = {}   
+        self.node_import_path = {} # used to keep track of the fall import path of node
+        self.node_editor = None
+        
         self.init_node_editor(self.context)
+
         
-        
-    def make_node(self, processor:Processor) -> Tuple[Dict, Dict]:
+    def make_node(self, processor:Processor, node_editor) -> Tuple[Dict, Dict]:
         '''
         Parse the object information and make it into a node
         '''
-        with dpg.node(label=processor.proc_name) as node:
+        with dpg.node(label=processor.proc_name, parent=node_editor) as node:
             sig = inspect.signature(processor.__init__)
             # logging.debug(f'{processor.proc_name}: {sig}')
 
@@ -142,18 +145,27 @@ class NodeManager():
             for obj_name, obj in inspect.getmembers(module, inspect.isclass):
                 if issubclass(obj, Processor):
                     class_names.add(obj_name)
+                    self.node_import_path[obj_name] = f'pyneurode.processor_node.{module_name}'
         
         return class_names
     
+    def add_node(self, sender, app_data, node_name):
+        # create a processor and create its node interface
+        node_module = importlib.import_module(self.node_import_path[node_name])
+        NodeClass = getattr(node_module, node_name)
+        node = NodeClass()
+        self.context.register_processors(node)
+        self.make_node(node, self.node_editor)
     
     def build_nodes_tree(self):
+        # build the tree nodes showing all available nodes
         nodes_name = self.get_available_processors()
         nodes2remove = set()
         with dpg.tree_node(label = 'Source', default_open=True):
             for name in nodes_name:
                 if name.endswith('Source'):
                     with dpg.group():
-                        dpg.add_button(label = name)
+                        dpg.add_button(label = name, callback=self.add_node, user_data=name)
                         nodes2remove.add(name)
                         
         nodes_name = nodes_name - nodes2remove
@@ -173,10 +185,12 @@ class NodeManager():
             for name in nodes_name:
                 with dpg.group():
                     dpg.add_button(label = name)
-        
+                    
         
     def init_node_editor(self, ctx:ProcessorContext):
+
         dpg.create_context()
+        dpg.configure_app(docking=True, docking_space=True, init_file='node_editor.ini')
         print('Building nodes')
         
         with dpg.window(label='Nodes', width=400, height=-1):
@@ -187,13 +201,13 @@ class NodeManager():
                 dpg.add_button(label='Play', callback=self.play)
                 dpg.add_button(label='Stop', callback=self.stop)
                 
-            with dpg.node_editor(width=-1, height=-1, callback=self.link_callback, delink_callback=self.delink_callback):
+            with dpg.node_editor(width=-1, height=-1, callback=self.link_callback, delink_callback=self.delink_callback) as self.node_editor:
 
                 idx = 0
                 # Find all processors in context and build node for them
                 for k,p in ctx.processors.items():
                     if not isinstance(p,GUIProcessor): #avoid creating too many connections for GUI
-                        self.nodes[p.proc_name] = self.make_node(p)
+                        self.nodes[p.proc_name] = self.make_node(p, self.node_editor)
                         self.nodes_idx[p.proc_name] = idx
                         idx += 1
                         
