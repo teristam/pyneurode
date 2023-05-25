@@ -2,11 +2,11 @@ from abc import ABC
 import logging
 import dearpygui.dearpygui as dpg
 from pyneurode.processor_node.GUIProcessor import GUIProcessor
-from pyneurode.processor_node.Message import Message
+from pyneurode.processor_node.Message import Message, NumpyMessage
 import numpy as np
 import shortuuid
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
-from typing import List, Union
+from typing import List, Tuple, Union
 from pyneurode.processor_node.Processor import Sink
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 from pyneurode.processor_node.Visualizer import Visualizer
@@ -19,7 +19,7 @@ class AnalogVisualizer(Visualizer):
     Display a analog value
     '''
     def __init__(self, buffer_length:int = 500, scale = 1, time_scale=None, filters=None) -> None:
-        super().__init__(filters=filters)
+        super().__init__(filters=[NumpyMessage])
         self.plot_data = (np.arange(buffer_length), np.zeros((buffer_length,)))
         self.data_count = 0
         self.plot_data_tag = self.name+'_plot_data'
@@ -109,7 +109,8 @@ class AnalogVisualizer(Visualizer):
             for i in range(len(ydata)):
                 dpg.set_value(self.series_name[i],(xdata,ydata[i])) #must be called in main thread
                 
-
+    def get_IOspecs(self) -> Tuple[List[Message], List[Message]]:
+        return ([NumpyMessage],[])
 
 class DummpyControlSink(Sink):
     def process(self, message: Message):

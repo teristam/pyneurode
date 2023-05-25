@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import *
+from typing import Any, Optional
 import numpy as np
 
 class Message:
@@ -33,3 +34,8 @@ class MetricsMessage(Message):
         }
         super().__init__(self.dtype, data)
     
+
+class NumpyMessage(Message):
+    dtype = 'numpy'
+    def __init__(self, data:np.ndarray, timestamp: Optional[float] = None):
+        super().__init__(self.dtype, data, timestamp)

@@ -59,11 +59,12 @@ class GUIProcessor(BatchProcessor):
         # each visualizer is associate with one or more message type definied in the filters
         
         for f in visualizer.filters:
+            print(f'registering {f.dtype} to {visualizer}')
             if not f in self.filter_visualizer_map:
-                self.filter_visualizer_map[f] = []
-                self.filter_visualizer_map[f].append(visualizer)
+                self.filter_visualizer_map[f.dtype] = []
+                self.filter_visualizer_map[f.dtype].append(visualizer)
             else:
-                self.filter_visualizer_map[f].append(visualizer)
+                self.filter_visualizer_map[f.dtype].append(visualizer)
         
         if control_targets is not None:
             if type(control_targets) is not list:
@@ -121,6 +122,7 @@ class GUIProcessor(BatchProcessor):
         msg_list = {}
         control_msg = []
 
+        #sort the messages
         for msg in messages:
             if not msg.dtype in msg_list:
                 msg_list[msg.dtype] = []

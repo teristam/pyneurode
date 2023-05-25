@@ -1,6 +1,7 @@
         
 import time
-from pyneurode.processor_node.Message import Message
+from typing import List, Tuple
+from pyneurode.processor_node.Message import Message, NumpyMessage
 from pyneurode.processor_node.Processor import Message2, TimeSource
 import numpy as np
 
@@ -47,3 +48,7 @@ class SineTimeSource(TimeSource):
                 return Message2(y)
             else:
                 return Message2(y)
+            
+            
+    def get_IOspecs(self) -> Tuple[List[Message], List[Message]]:
+        return [[], [NumpyMessage]]

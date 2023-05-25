@@ -1,5 +1,6 @@
     
-from pyneurode.processor_node.Message import Message
+from typing import List, Tuple
+from pyneurode.processor_node.Message import Message, NumpyMessage
 from pyneurode.processor_node.Processor import Processor
 
 
@@ -9,6 +10,9 @@ class ScaleProcessor(Processor):
         self.a = a
         self.b = b
         
-    def process(self, message: Message) -> Message:
+    def process(self, message: NumpyMessage) -> Message:
         x = message.data*self.a+self.b
-        return Message(message.dtype, x)
+        return NumpyMessage(x)
+    
+    def get_IOspecs(self) -> Tuple[List[Message], List[Message]]:
+        return ([NumpyMessage], [NumpyMessage])
