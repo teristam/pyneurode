@@ -9,22 +9,39 @@ import inspect
 import logging
 import importlib
 
+from pyneurode.processor_node.Visualizer import Visualizer
+
 class NodeManager():
-    def __init__(self, context_manager) -> None:
+    def __init__(self, context_manager, create_gui_processor=True) -> None:
         self.context:ProcessorContext = context_manager
         self.nodes = {} # a dictionary containing the tuple of (input, output, node), the key is the processor name 
         self.nodes_idx = {}   
         self.node_import_path = {} # used to keep track of the fall import path of node
         self.node_editor = None
+        self.gui_processor = None
+        self.visualizers = {}
+        
+        if create_gui_processor:
+            # Allow for visualizer support
+            gui = GUIProcessor()
+            self.gui_processor = gui
+            self.context.register_processors(gui)
         
         self.init_node_editor(self.context)
 
         
-    def make_node(self, processor:Processor, node_editor) -> Tuple[Dict, Dict]:
-        '''
-        Parse the object information and make it into a node
-        '''
-        with dpg.node(label=processor.proc_name, parent=node_editor) as node:
+        
+    def make_node(self, processor:Union[Processor, Visualizer], node_editor) -> Tuple[Dict, Dict]:
+        #Parse the object information and make it into a node
+        
+        
+        if isinstance(processor, Processor):
+            node_name = processor.proc_name
+        else:
+            node_name = processor.name
+        
+        
+        with dpg.node(label=node_name, parent=node_editor) as node:
             sig = inspect.signature(processor.__init__)
             # logging.debug(f'{processor.proc_name}: {sig}')
 
@@ -38,16 +55,16 @@ class NodeManager():
             
             if not isinstance(processor, Source):
                 for input in input_cls:
-                    with dpg.node_attribute(label=processor.proc_name, attribute_type=dpg.mvNode_Attr_Input) as node_input:
+                    with dpg.node_attribute(label=node_name, attribute_type=dpg.mvNode_Attr_Input) as node_input:
                         dpg.add_text(input.__name__)
                         inputs[input.__name__] = node_input
                         
                 
             outputs = {}
             
-            if not isinstance(processor, Sink):
+            if not isinstance(processor, Sink) and not isinstance(processor, Visualizer):
                 for output in output_cls:
-                    with dpg.node_attribute(label=processor.proc_name, attribute_type=dpg.mvNode_Attr_Output) as node_output:
+                    with dpg.node_attribute(label=node_name, attribute_type=dpg.mvNode_Attr_Output) as node_output:
                         dpg.add_text(output.__name__, indent=200)
                         outputs[output.__name__] = node_output
                     
@@ -55,7 +72,7 @@ class NodeManager():
             
             for param in sig.parameters.keys():
                 print(param,sig.parameters[param].annotation )
-                with dpg.node_attribute(label=processor.proc_name, attribute_type=dpg.mvNode_Attr_Static): #static attribute
+                with dpg.node_attribute(label=node_name, attribute_type=dpg.mvNode_Attr_Static): #static attribute
                     annotation = sig.parameters[param].annotation
                     if annotation is float:
                         dpg.add_input_float(label=param, width = 150)
@@ -68,7 +85,19 @@ class NodeManager():
                         
             return inputs, outputs,  node
         
-           
+    
+    def connect_visualizer(self, input_name, visualizer_name):
+        # register the visualizer to the GUI processor
+        if self.gui_processor is not None:
+            # Connect the processor to the GUI
+            input = self.context.get_processor(input_name)
+            input.connect(self.gui_processor)
+            
+            # register the visualizer to the GUI
+            visualizer = self.visualizers[visualizer_name]
+            self.gui_processor.register_visualizer(visualizer)
+        
+    
                         
     def link_callback(self, sender,app_data):
         attr1, attr2 = app_data
@@ -78,16 +107,25 @@ class NodeManager():
         #Find the corresponding proccessor and connect them together
         proc1_name, proc1_type = self.find_processor_from_attr(attr1)
         proc2_name, proc2_type = self.find_processor_from_attr(attr2)
-        
+
+
+        # connect the processors together, taking care of the connection direction
         if proc1_type =='input':
-            input = self.context.get_processor(proc1_name)
-            output = self.context.get_processor(proc2_name)
-            input.connect(output)
+            if 'Visualizer' in proc1_name:
+                self.connect_visualizer(proc2_name, proc1_name)
+            else:
+                
+                input = self.context.get_processor(proc1_name)
+                output = self.context.get_processor(proc2_name)
+                input.connect(output)
         else:
-            output = self.context.get_processor(proc1_name)
-            input = self.context.get_processor(proc2_name)
-            input.connect(output)
-    
+            if 'Visualizer' in proc2_name:
+                self.connect_visualizer(proc1_name, proc2_name)
+            else:
+                output = self.context.get_processor(proc1_name)
+                input = self.context.get_processor(proc2_name)
+                input.connect(output)
+
     def delink_callback(self, sender, link):
         link_info = dpg.get_item_configuration(link)
         attr_1 = link_info['attr_1']
@@ -126,6 +164,7 @@ class NodeManager():
             for k,v in output.items():
                 if v ==attr:
                     return processor_name, 'output'
+
         
         raise ValueError(f'Cannot find the provided attributes {attr}')
 
@@ -156,6 +195,19 @@ class NodeManager():
         
         return class_names
     
+    def get_available_visualizer(self):
+        files = [f for f in os.listdir('src/pyneurode/processor_node') if f.endswith('.py')]
+        class_names = set()
+        for f in files:
+            module_name = Path(f).stem
+            module = importlib.import_module('pyneurode.processor_node.'+module_name)
+            for obj_name, obj in inspect.getmembers(module, inspect.isclass):
+                if issubclass(obj, Visualizer):
+                    class_names.add(obj_name)
+                    self.node_import_path[obj_name] = f'pyneurode.processor_node.{module_name}'
+        
+        return class_names
+    
     def add_node(self, sender, app_data, node_name):
         # create a processor and create its node interface
         node_module = importlib.import_module(self.node_import_path[node_name])
@@ -163,6 +215,15 @@ class NodeManager():
         node = NodeClass()
         self.context.register_processors(node)
         self.nodes[node.proc_name] = self.make_node(node, self.node_editor)
+        
+    def add_visualizer_node(self, sender, app_data, node_name):
+        # create a visualizer and create its node interface
+        node_module = importlib.import_module(self.node_import_path[node_name])
+        NodeClass = getattr(node_module, node_name)
+        node = NodeClass()
+        self.nodes[node.name] = self.make_node(node, self.node_editor)
+        self.visualizers[node.name] = node
+
      
     def build_nodes_tree(self):
         # build the tree nodes showing all available nodes
@@ -192,6 +253,12 @@ class NodeManager():
             for name in nodes_name:
                 with dpg.group():
                     dpg.add_button(label = name, callback=self.add_node,  user_data=name)
+                    
+        with dpg.tree_node(label = 'Visualizer', default_open=True):
+            nodes_name = self.get_available_visualizer()
+            for name in nodes_name:
+                with dpg.group():
+                    dpg.add_button(label = name, callback=self.add_visualizer_node,  user_data=name)
                     
         
     def init_node_editor(self, ctx:ProcessorContext):
@@ -229,7 +296,7 @@ class NodeManager():
                             node_inputs = list(self.nodes[k][0].values())
                             
                             if node_outputs and node_inputs:
-                                # dpg.add_node_link(node_outputs[0], node_inputs[0])
+                                dpg.add_node_link(node_outputs[0], node_inputs[0])
                                 edges.append([self.nodes_idx[k], self.nodes_idx[p.proc_name]])
                                 
                     except KeyError:
