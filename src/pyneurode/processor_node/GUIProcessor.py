@@ -111,6 +111,7 @@ class GUIProcessor(BatchProcessor):
         # build the GUI
         self.make_control_panel()
 
+        #TODO if more than one visualizer is register to a message type, only the last one will be initialized
         for msg_name, visualizer_list in self.filter_visualizer_map.items():
             for v in visualizer_list:
                 print('Initializing ', v.name)
