@@ -43,7 +43,7 @@ class SineTimeSource(TimeSource):
                 y += np.random.normal(scale=self.noise_std, size=y.shape)
                 
             if self.msg_type is None:
-                return Message('sine', y)
+                return NumpyMessage(y)
             elif self.msg_type =='message1':
                 return Message2(y)
             else:
