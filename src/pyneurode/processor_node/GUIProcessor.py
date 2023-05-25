@@ -27,7 +27,7 @@ class GUIProcessor(BatchProcessor):
             internal_buffer_size (int, optional): size of the internal buffer to hold messages before they are displayed. Defaults to 1000.
         """
         super().__init__(interval=1/frame_rate, internal_buffer_size=internal_buffer_size)
-        self.visualizers:Dict[str,List[Visualizer]] = {} # a mapping of filter and their list of visualizers to process them
+        self.filter_visualizer_map:Dict[str,List[Visualizer]] = {} # a mapping of filter and their list of visualizers to process them
         self.control_targets:Dict[Visualizer, Processor]= {} # a mapping of the visualizer that emites control message and the processor that will receive them
 
     def startup(self):
@@ -48,7 +48,7 @@ class GUIProcessor(BatchProcessor):
 
 
 
-    def register_visualizer(self, visualizer:Visualizer, filters:List[str], control_targets:Optional[Union[List[Processor], Processor]]=None):
+    def register_visualizer(self, visualizer:Visualizer, filters:List[str]=None, control_targets:Optional[Union[List[Processor], Processor]]=None):
         """Register a Visualizer object with the GUIProcessor. Only message of types specified in the
         filter list will be passed to the visualizer.
 
@@ -60,11 +60,11 @@ class GUIProcessor(BatchProcessor):
         # each visualizer is associate with one or more message type definied in the filters
         
         for f in filters:
-            if not f in self.visualizers:
-                self.visualizers[f] = []
-                self.visualizers[f].append(visualizer)
+            if not f in self.filter_visualizer_map:
+                self.filter_visualizer_map[f] = []
+                self.filter_visualizer_map[f].append(visualizer)
             else:
-                self.visualizers[f].append(visualizer)
+                self.filter_visualizer_map[f].append(visualizer)
         
         if control_targets is not None:
             if type(control_targets) is not list:
@@ -111,7 +111,7 @@ class GUIProcessor(BatchProcessor):
         # build the GUI
         self.make_control_panel()
 
-        for msg_name, visualizer_list in self.visualizers.items():
+        for msg_name, visualizer_list in self.filter_visualizer_map.items():
             for v in visualizer_list:
                 print('Initializing ', v.name)
                 v.init_gui()
@@ -131,8 +131,8 @@ class GUIProcessor(BatchProcessor):
 
         # pass each type of messages to their respective visualizer        
         for msg_type, msgs in msg_list.items():
-            if  msg_type in self.visualizers:
-                for v in self.visualizers[msg_type]:
+            if  msg_type in self.filter_visualizer_map:
+                for v in self.filter_visualizer_map[msg_type]:
                         msg = v._refresh(msgs)
                         if v in self.control_targets:
                             for target in self.control_targets[v]:
