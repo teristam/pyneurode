@@ -48,18 +48,17 @@ class GUIProcessor(BatchProcessor):
 
 
 
-    def register_visualizer(self, visualizer:Visualizer, filters:List[str]=None, control_targets:Optional[Union[List[Processor], Processor]]=None):
+    def register_visualizer(self, visualizer:Visualizer, control_targets:Optional[Union[List[Processor], Processor]]=None):
         """Register a Visualizer object with the GUIProcessor. Only message of types specified in the
         filter list will be passed to the visualizer.
 
         Args:
             visualizer (Visualizer): visualizer to be creat the GUI and call during frame update
-            filters (List[str]): names of message type to be passed to the visualizer. 
         """
         # 
         # each visualizer is associate with one or more message type definied in the filters
         
-        for f in filters:
+        for f in visualizer.filters:
             if not f in self.filter_visualizer_map:
                 self.filter_visualizer_map[f] = []
                 self.filter_visualizer_map[f].append(visualizer)

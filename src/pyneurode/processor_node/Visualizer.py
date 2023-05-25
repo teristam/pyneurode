@@ -11,7 +11,7 @@ from pyneurode.processor_node.Message import Message
 import numpy as np
 import shortuuid
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
-from typing import List, Union
+from typing import List, Tuple, Union
 from pyneurode.processor_node.Processor import logger
 
 
@@ -25,7 +25,7 @@ class Visualizer:
         this is an exmaple showing how it works
     
     """
-    def __init__(self, verbose=False):
+    def __init__(self, verbose=False, filters:list=None):
         """
 
         Args:
@@ -35,7 +35,14 @@ class Visualizer:
         self.log = functools.partial(logger, self.name)
         self.control_msgs = []
         self.verbose = verbose
+        
+        if filters is None:
+            filters = []
+            
+        self.filters = filters
 
+    def set_filters(self,filters:list):
+        self.filters = filters
 
     def init_gui(self):
         """Build the GUI using dearpygui here
@@ -57,6 +64,16 @@ class Visualizer:
         self.control_msgs = []
         
         return msg
+    
+    def get_IOspecs(self) -> Tuple[List[Message], List[Message]]:
+        """return a tuple ([input message], [output message]) with the Message type that this processor is expected to
+        receive and produce respectively
+        """
+        
+        return (
+            [Message],
+            [Message]
+        )
     
 
     def update(self, messages:List[Message]):

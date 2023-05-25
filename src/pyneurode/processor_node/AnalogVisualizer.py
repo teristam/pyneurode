@@ -18,8 +18,8 @@ class AnalogVisualizer(Visualizer):
     '''
     Display a analog value
     '''
-    def __init__(self, buffer_length:int = 500, scale = 1, time_scale=None) -> None:
-        super().__init__()
+    def __init__(self, buffer_length:int = 500, scale = 1, time_scale=None, filters=None) -> None:
+        super().__init__(filters=filters)
         self.plot_data = (np.arange(buffer_length), np.zeros((buffer_length,)))
         self.data_count = 0
         self.plot_data_tag = self.name+'_plot_data'
