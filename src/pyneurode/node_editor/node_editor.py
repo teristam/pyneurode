@@ -162,8 +162,8 @@ class NodeManager():
         NodeClass = getattr(node_module, node_name)
         node = NodeClass()
         self.context.register_processors(node)
-        self.make_node(node, self.node_editor)
-    
+        self.nodes[node.proc_name] = self.make_node(node, self.node_editor)
+     
     def build_nodes_tree(self):
         # build the tree nodes showing all available nodes
         nodes_name = self.get_available_processors()
