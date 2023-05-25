@@ -60,11 +60,10 @@ class TuningCurveVisualizer(AnalogVisualizer):
     """
     A visualizer that calculate and display the 1D tuning curve of cells in realtime
     """
-    def __init__(self, name:str, x_variable_idx, nbin, bin_size = 1,
+    def __init__(self, x_variable_idx=0, nbin=10, bin_size = 1,
                  buffer_length:int = 500, scale = 1, time_scale=None, smoothing_alpha=0.1) -> None:
-        super().__init__(name)
+        super().__init__()
         self.plot_data = (np.arange(buffer_length), np.zeros((buffer_length,)))
-        self.name = name #unique identying string for the visualizer
         self.data_count = 0
         self.plot_data_tag = self.name+'_plot_data'
         self.buffer = None

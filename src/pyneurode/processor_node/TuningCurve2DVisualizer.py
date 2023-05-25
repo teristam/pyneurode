@@ -24,10 +24,9 @@ class TuningCurve2DVisualizer(Visualizer):
     Display a 2D analog signal
     It accepts data 
     '''
-    def __init__(self, name:str, buffer_length:int = 500, scale = 6, xbin:int = 10, ybin:int=10, xmax=10, ymax=10, time_scale=None) -> None:
-        super().__init__(name)
+    def __init__(self, buffer_length:int = 500, scale = 6, xbin:int = 10, ybin:int=10, xmax=10, ymax=10, time_scale=None) -> None:
+        super().__init__()
         self.plot_data = (np.arange(buffer_length), np.zeros((buffer_length,)))
-        self.name = name #unique identying string for the visualizer
         self.data_count = 0
         self.plot_data_tag = self.name+'_plot_data'
         self.buffer = None

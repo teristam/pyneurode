@@ -25,13 +25,13 @@ class Visualizer:
         this is an exmaple showing how it works
     
     """
-    def __init__(self, name:str, verbose=False):
+    def __init__(self, verbose=False):
         """
 
         Args:
             name (str): Name of the visualizer, for identification purpose
         """
-        self.name = name
+        self.name =  self.__class__.__name__ +'_'+ shortuuid.ShortUUID().random(5) #unique identying string for the processor
         self.log = functools.partial(logger, self.name)
         self.control_msgs = []
         self.verbose = verbose
