@@ -313,12 +313,12 @@ class NodeManager():
                             else:
                                 # Output is GUI processor , need special handling
                                 gui_proc = ctx.get_processor(k)
-                                for _, viss in gui_proc.source_visualizer_map.items():
-                                    for v in viss:
-                                        node_inputs = list(self.nodes[v.name][0].values())
-                                        if node_outputs and node_inputs:
-                                            dpg.add_node_link(node_outputs[0], node_inputs[0])
-                                            edges.append([self.nodes_idx[p.proc_name], self.nodes_idx[v.name]]) 
+                                viss = gui_proc.source_visualizer_map[p.proc_name]
+                                for v in viss:
+                                    node_inputs = list(self.nodes[v.name][0].values())
+                                    if node_outputs and node_inputs:
+                                        dpg.add_node_link(node_outputs[0], node_inputs[0])
+                                        edges.append([self.nodes_idx[p.proc_name], self.nodes_idx[v.name]]) 
                                         
                                                           
             
