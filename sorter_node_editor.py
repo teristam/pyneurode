@@ -30,18 +30,13 @@ if  __name__ == '__main__':
         # sineWave = SineTimeSource(interval = 0.1,frequency = 12.3, channel_num=10, sampling_frequency=100)
         # scaleProcessor = ScaleProcessor(4,5)
         
-        #TODO now the same type of message, although coming from different processor, will got mixed together when received at the GUIProcessor
         gui = GUIProcessor()
         gui.register_visualizer(sineWave, analog_visualizer1)
         gui.register_visualizer(scaleProcessor, analog_visualizer2)
 
 
         sineWave.connect(scaleProcessor)
-        # sineWave.connect(gui)
-        # scaleProcessor.connect(gui)
-        # scaleProcessor.connect(gui,'sine')
 
-            
         NodeManager(ctx)
         
             

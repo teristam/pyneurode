@@ -13,7 +13,7 @@ import importlib
 from pyneurode.processor_node.Visualizer import Visualizer
 
 class NodeManager():
-    def __init__(self, context_manager, create_gui_processor=True) -> None:
+    def __init__(self, context_manager:ProcessorContext) -> None:
         self.context:ProcessorContext = context_manager
         self.nodes = {} # a dictionary containing the tuple of (input, output, node), the key is the processor name 
         self.nodes_idx = {}  #index of the node for dearpygui
@@ -21,8 +21,9 @@ class NodeManager():
         self.node_editor = None
         self.gui_processor = None
         self.visualizers = {}
-        
-        if create_gui_processor:
+                
+        if not any(['GUIProcessor' in m for m in context_manager.processors.keys()]):
+            print('Creating new GUIProcessor')
             # Allow for visualizer support
             gui = GUIProcessor()
             self.gui_processor = gui
@@ -91,7 +92,6 @@ class NodeManager():
         if self.gui_processor is not None:
             # Connect the processor to the GUI
             source_proc = self.context.get_processor(input_name)
-            # input.connect(self.gui_processor)
             
             # register the visualizer to the GUI
             visualizer = self.visualizers[visualizer_name]

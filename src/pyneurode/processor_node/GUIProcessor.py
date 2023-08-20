@@ -144,14 +144,15 @@ class GUIProcessor(BatchProcessor):
         for msg in messages:
             source_list[msg.source].append(msg)
             
+        # Messages from each source will then be sent to down stream visualizers
         for source, msgs in source_list.items():
             if source in self.source_visualizer_map:
                 for v in self.source_visualizer_map[source]:
-                    if msg.dtype in v.filters:
-                        msg = v._refresh(msgs) #send all messages at once
-                        if v in self.control_targets:
-                            for target in self.control_targets[v]:
-                                self.send(msg, target.proc_name) #send messange to the connected processor for that visualizer
+                    msg2show = [m for m in msgs if type(m) in v.filters]
+                    msg = v._refresh(msg2show) #send all messages at once
+                    if v in self.control_targets:
+                        for target in self.control_targets[v]:
+                            self.send(msg, target.proc_name) #send messange to the connected processor for that visualizer
 
 
         #sort the messages
