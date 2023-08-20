@@ -44,10 +44,11 @@ class Channel:
     A class that manage the connection between two Processors
     It will only allows  message types that match with the filter to pass through
     '''
-    def __init__(self, queue:Queue, filters:Union[List[str],List[Message]]=None):
+    def __init__(self, queue:Queue, filters:Union[List[str],List[Message]]=None, source:str=''):
         self.queue = queue
         self.filters = filters
         self.filters = filters
+        self.source = source #name of the sending process
 
     def send(self, message:Message):
         '''
@@ -59,8 +60,10 @@ class Channel:
             if dtype in self.filters:
                 # the timeout is necessary to avoid the other process shutting down first
                 # and block the current process
+                message.source = self.source #mark the sending process
                 self.queue.put(message)
         else:
+            message.source = self.source #mark the sending process
             self.queue.put(message)
 
     def recv(self, timeout = 0.1):
@@ -128,7 +131,7 @@ class Processor(Context):
         
     def connect(self, to_processor:Processor, filters=None):
         self.log(logging.DEBUG, f'Connecting {self.proc_name} and {to_processor.proc_name}')
-        self.out_queues[to_processor.proc_name] = Channel(to_processor.in_queue, filters)
+        self.out_queues[to_processor.proc_name] = Channel(to_processor.in_queue, filters, self.proc_name)
         
     def disconnect(self, to_processor:Processor):
         self.out_queues.pop(to_processor.proc_name, None)
