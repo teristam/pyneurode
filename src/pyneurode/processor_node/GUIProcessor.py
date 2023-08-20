@@ -1,4 +1,5 @@
-from __future__ import annotations # for postponed evaluation
+from __future__ import annotations
+from collections import defaultdict # for postponed evaluation
 from multiprocessing import Event
 
 from pyparsing import Optional
@@ -27,7 +28,7 @@ class GUIProcessor(BatchProcessor):
             internal_buffer_size (int, optional): size of the internal buffer to hold messages before they are displayed. Defaults to 1000.
         """
         super().__init__(interval=1/frame_rate, internal_buffer_size=internal_buffer_size)
-        self.filter_visualizer_map:Dict[str,List[Visualizer]] = {} # a mapping of filter and their list of visualizers to process them
+        self.source_visualizer_map:Dict[str,List[Visualizer]] = {} # a mapping of filter and their list of visualizers to process them
         self.control_targets:Dict[Visualizer, Processor]= {} # a mapping of the visualizer that emites control message and the processor that will receive them
 
     def startup(self):
@@ -48,32 +49,47 @@ class GUIProcessor(BatchProcessor):
 
 
 
-    def register_visualizer(self, visualizer:Visualizer, control_targets:Optional[Union[List[Processor], Processor]]=None):
+    def register_visualizer(self,  source_processor:Processor, visualizers:List[Visualizer], control_targets:Optional[Union[List[Processor], Processor]]=None):
         """Register a Visualizer object with the GUIProcessor. Only message of types specified in the
         filter list will be passed to the visualizer.
 
         Args:
             visualizer (Visualizer): visualizer to be creat the GUI and call during frame update
+            source_processor (Processor): the source process from which message will be received for the visualizer
         """
         # 
-        # each visualizer is associate with one or more message type definied in the filters
+        # each source process is associated with one or more visualizers
         
-        for f in visualizer.filters:
-            print(f'registering {f.dtype} to {visualizer}')
-            if not f in self.filter_visualizer_map:
-                self.filter_visualizer_map[f.dtype] = []
-                self.filter_visualizer_map[f.dtype].append(visualizer)
+        if not type(visualizers) is list:
+            visualizers = [visualizers]
+            
+        source_processor.connect(self)
+        
+        for v in visualizers:
+            print(f'Registering {source_processor.proc_name} to {v.name}')
+            if not v in self.source_visualizer_map:
+                self.source_visualizer_map[source_processor.proc_name] = []
+                self.source_visualizer_map[source_processor.proc_name].append(v)
             else:
-                self.filter_visualizer_map[f.dtype].append(visualizer)
+                self.source_visualizer_map[source_processor.proc_name].append(v)
+
+        # for f in visualizer.filters:
+        #     print(f'registering {f.dtype} to {visualizer}')
+        #     if not f in self.source_visualizer_map:
+        #         self.source_visualizer_map[f.dtype] = []
+        #         self.source_visualizer_map[f.dtype].append(visualizer)
+        #     else:
+        #         self.source_visualizer_map[f.dtype].append(visualizer)
         
         if control_targets is not None:
             if type(control_targets) is not list:
                 control_targets = [control_targets]
             # Connect where the message from visualizer should send to 
+            # currently only one visualizer can be connected to control_targets
             for target in control_targets:
-                if not visualizer in self.control_targets:
-                    self.control_targets[visualizer] = []
-                self.control_targets[visualizer].append(target)
+                if not visualizers[0] in self.control_targets:
+                    self.control_targets[visualizers[0]] = []
+                self.control_targets[visualizers[0]].append(target)
                 self.connect(target) # enable sending of messaging to the target processor
 
     def main_loop(self):
@@ -112,7 +128,7 @@ class GUIProcessor(BatchProcessor):
         self.make_control_panel()
 
         #TODO if more than one visualizer is register to a message type, only the last one will be initialized
-        for msg_name, visualizer_list in self.filter_visualizer_map.items():
+        for msg_name, visualizer_list in self.source_visualizer_map.items():
             for v in visualizer_list:
                 print('Initializing ', v.name)
                 v.init_gui()
@@ -120,22 +136,37 @@ class GUIProcessor(BatchProcessor):
     def process(self, messages: List[Message] = None):
         # sort the messages according to their type
         #TODO use a separate thread for each visualizer
-        msg_list = {}
+        # msg_list = {}
         control_msg = []
+        source_list = defaultdict(list)
 
-        #sort the messages
+        # sort the messages according to its source 
         for msg in messages:
-            if not msg.dtype in msg_list:
-                msg_list[msg.dtype] = []
-                msg_list[msg.dtype].append(msg)
-            else:
-                msg_list[msg.dtype].append(msg)
-
-        # pass each type of messages to their respective visualizer        
-        for msg_type, msgs in msg_list.items():
-            if  msg_type in self.filter_visualizer_map:
-                for v in self.filter_visualizer_map[msg_type]:
-                        msg = v._refresh(msgs)
+            source_list[msg.source].append(msg)
+            
+        for source, msgs in source_list.items():
+            if source in self.source_visualizer_map:
+                for v in self.source_visualizer_map[source]:
+                    if msg.dtype in v.filters:
+                        msg = v._refresh(msgs) #send all messages at once
                         if v in self.control_targets:
                             for target in self.control_targets[v]:
                                 self.send(msg, target.proc_name) #send messange to the connected processor for that visualizer
+
+
+        #sort the messages
+        # for msg in messages:
+        #     if not msg.dtype in msg_list:
+        #         msg_list[msg.dtype] = []
+        #         msg_list[msg.dtype].append(msg)
+        #     else:
+        #         msg_list[msg.dtype].append(msg)
+
+        # # pass each type of messages to their respective visualizer        
+        # for msg_type, msgs in msg_list.items():
+        #     if  msg_type in self.source_visualizer_map:
+        #         for v in self.source_visualizer_map[msg_type]:
+        #                 msg = v._refresh(msgs)
+        #                 if v in self.control_targets:
+        #                     for target in self.control_targets[v]:
+        #                         self.send(msg, target.proc_name) #send messange to the connected processor for that visualizer
