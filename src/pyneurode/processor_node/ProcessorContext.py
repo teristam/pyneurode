@@ -30,7 +30,7 @@ class ProcessorContext(Context):
     def __init__(self, auto_start=True):
         self.log = functools.partial(logger, 'ProcessorContext')
         self.shutdown_event = mp.Event()
-        self.processors:dict = {}
+        self.processors:dict = {} #dictionary of the processors managed by the context
         self.links = []
         self.subprocs = []
         self.auto_start = True
@@ -65,7 +65,7 @@ class ProcessorContext(Context):
     def get_processor(self, name) -> Processor:
         #return a processor
         return self.processors[name]
-            
+    
     
     def __exit__(self, exc_type, exc_value, exc_tb):
         super().__exit__(exc_type, exc_value, exc_tb)
