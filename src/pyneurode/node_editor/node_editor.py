@@ -1,4 +1,5 @@
 from pathlib import Path
+import warnings
 import dearpygui.dearpygui as dpg
 from pyneurode.processor_node.Processor import *
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
@@ -15,7 +16,7 @@ class NodeManager():
     def __init__(self, context_manager, create_gui_processor=True) -> None:
         self.context:ProcessorContext = context_manager
         self.nodes = {} # a dictionary containing the tuple of (input, output, node), the key is the processor name 
-        self.nodes_idx = {}   
+        self.nodes_idx = {}  #index of the node for dearpygui
         self.node_import_path = {} # used to keep track of the fall import path of node
         self.node_editor = None
         self.gui_processor = None
@@ -33,7 +34,6 @@ class NodeManager():
         
     def make_node(self, processor:Union[Processor, Visualizer], node_editor) -> Tuple[Dict, Dict]:
         #Parse the object information and make it into a node
-        
         
         if isinstance(processor, Processor):
             node_name = processor.proc_name
@@ -90,12 +90,12 @@ class NodeManager():
         # register the visualizer to the GUI processor
         if self.gui_processor is not None:
             # Connect the processor to the GUI
-            input = self.context.get_processor(input_name)
-            input.connect(self.gui_processor)
+            source_proc = self.context.get_processor(input_name)
+            # input.connect(self.gui_processor)
             
             # register the visualizer to the GUI
             visualizer = self.visualizers[visualizer_name]
-            self.gui_processor.register_visualizer(visualizer)
+            self.gui_processor.register_visualizer(source_proc, visualizer)
         
     
                         
@@ -284,39 +284,63 @@ class NodeManager():
                         self.nodes[p.proc_name] = self.make_node(p, self.node_editor)
                         self.nodes_idx[p.proc_name] = idx
                         idx += 1
+                    else:
+                        # if it is a GUI processor, build nodes for its visualizer instead
+                        for src_proc, viss in p.source_visualizer_map.items():
+                            for v in viss:
+                                self.nodes[v.name] = self.make_node(v, self.node_editor)
+                                self.nodes_idx[v.name] = idx
+                                idx += 1
+
                         
                 edges = [] # buld the node graph for layout later
 
                 # add in the connection
                 for k, p in ctx.processors.items(): #current processor
-                    try:
-                        node_outputs = list(self.nodes[p.proc_name][1].values())
+                    print('processor: ', p)
+                    if not isinstance(p, GUIProcessor):
+                        # Connect output of current proc to the input of the next proc
+                        node_outputs = list(self.nodes[p.proc_name][1].values()) 
 
                         for k in p.out_queues.keys(): #name of the target processor
-                            node_inputs = list(self.nodes[k][0].values())
-                            
-                            if node_outputs and node_inputs:
-                                dpg.add_node_link(node_outputs[0], node_inputs[0])
-                                edges.append([self.nodes_idx[k], self.nodes_idx[p.proc_name]])
+                            if not 'GUIProcessor' in k:
+                                # Normal nodes
+                                node_inputs = list(self.nodes[k][0].values())
                                 
-                    except KeyError:
-                        pass
+                                if node_outputs and node_inputs:
+                                    dpg.add_node_link(node_outputs[0], node_inputs[0])
+                                    edges.append([self.nodes_idx[k], self.nodes_idx[p.proc_name]])      
+                            else:
+                                # Output is GUI processor , need special handling
+                                gui_proc = ctx.get_processor(k)
+                                for _, viss in gui_proc.source_visualizer_map.items():
+                                    for v in viss:
+                                        node_inputs = list(self.nodes[v.name][0].values())
+                                        if node_outputs and node_inputs:
+                                            dpg.add_node_link(node_outputs[0], node_inputs[0])
+                                            edges.append([self.nodes_idx[p.proc_name], self.nodes_idx[v.name]]) 
+                                        
+                                                          
+            
                     
                 
-                # Create the graph and generate the best laytout
-                g = ig.Graph(edges, directed=True)
-                layout = g.layout(layout='grid')
-                #shift the pos of nodes so that they always start at 0,0
-                layout = np.array(list(layout))
-                layout -= layout.min(axis=0)
-                layout += 0.2 # padding
-                
-                # print(layout)
-                # update the node position with the layout
-                scale = 350
-                for k, v in self.nodes.items():
-                    pos = layout[self.nodes_idx[k]]
-                    dpg.set_item_pos(v[2], pos*scale) #node object
+                # Create the graph and generate the best layout
+                if len(edges)>0:
+                    g = ig.Graph(edges, directed=True)
+                    layout = g.layout(layout='grid')
+                    #shift the pos of nodes so that they always start at 0,0
+                    layout = np.array(list(layout))
+                    layout -= layout.min(axis=0)
+                    layout += 0.2 # padding
+                    
+                    # print(layout)
+                    # update the node position with the layout
+                    scale = 350
+                    for k, v in self.nodes.items():
+                        pos = layout[self.nodes_idx[k]]
+                        dpg.set_item_pos(v[2], pos*scale) #node object
+                else:
+                    warnings.warn('Warning: no node edge can be found')
                     
                     
         # register global event
