@@ -8,10 +8,11 @@ class Message:
     Simple class that transfer data between Processors
     '''
     
-    def __init__(self, dtype:str, data:Any, timestamp:Optional[float]=None):
+    def __init__(self, dtype:str, data:Any, timestamp:Optional[float]=None, source:Optional[str]=''):
         self.dtype = dtype
         self.data = data
         self.timestamp = timestamp
+        self.source = source
 
     def __repr__(self) -> str:
 
