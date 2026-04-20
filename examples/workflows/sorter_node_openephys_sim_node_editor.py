@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO)
 dpg.create_context()
 
 if  __name__ == '__main__':
-    templates = np.load('example/data/spikes_waveforms.npy') # cells x electrode x timepoints
+    templates = np.load('example/spikes/spikes_waveforms.npy') # cells x electrode x timepoints
     # templates = templates[:,:, np.newaxis, :]
 
     Fs=30000
