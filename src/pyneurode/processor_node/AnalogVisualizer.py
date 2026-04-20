@@ -81,6 +81,8 @@ class AnalogVisualizer(Visualizer):
         # update the plot
 
         # Re-arrange the data to be suitable for plotting
+        if self.buffer is None:
+            return
         ydata = self.buffer.buffer.T.copy()
         shift = np.arange(ydata.shape[0])[None,].T * self.scale
         ydata += shift #shift the data for different channel
