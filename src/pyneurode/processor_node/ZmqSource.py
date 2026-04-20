@@ -1,4 +1,4 @@
-from .Processor import EchoProcessor, Source, Message
+from .Processor import EchoSink, Source, Message
 import time 
 from pyneurode.zmq_client import *
 import pickle 
@@ -81,7 +81,7 @@ class ZmqSource(Source):
 if __name__ == '__main__':
     with ProcessorContext() as ctx:
         zmqSource = ZmqSource(adc_channel=68, data_dump_fn='data/64_channel_packetlist.pkl')
-        echoProcessor = EchoProcessor()
+        echoProcessor = EchoSink()
 
         zmqSource.connect(echoProcessor)
 

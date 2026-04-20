@@ -20,7 +20,7 @@ def test_processor():
         source = DummyTimeSource(0.1)
         add = AddProcessor()
         echo1 = FileEchoSink(filename=echoFile)
-        echo2 = EchoProcessor()
+        echo2 = EchoSink()
 
         source.connect(add)
         add.connect(echo1)

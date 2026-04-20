@@ -1,10 +1,11 @@
 from sklearn import neural_network
 from pyneurode.processor_node.Processor import MsgTimeSource, Processor
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
-from pyneurode.processor_node.SpikeSortProcessor import SpikeTrainMessage
 from pyneurode.processor_node.ArduinoTriggerSink import ArduinoTriggerMessage, ArduinoTriggerSink
 import logging
 import numpy as np
+
+from pyneurode.processor_node.TemplateMatchProcessor import SpikeTrainMessage
 
 class Spike2ArduinoTriggerProcessor(Processor):
     """Convert the spike of a neuron to AdruinoMessage so that it can be used to trigger external device
@@ -26,17 +27,20 @@ class Spike2ArduinoTriggerProcessor(Processor):
         self.max_frame_to_skip = max_frame_to_skip
     
     def process(self, message: SpikeTrainMessage) -> SpikeTrainMessage:
-        if isinstance(message, SpikeTrainMessage):
-            spiketrain = message.data
+        # spiketrain is (time x neuron)
 
-            if spiketrain.shape[1]<self.max_frame_to_skip:
+        if type(message) is SpikeTrainMessage:
+            spiketrain = message.data
+            # self.log(logging.INFO, f'spike2arduino msg {message}')
+            
+            if spiketrain.shape[0]<self.max_frame_to_skip:
                 msg_list = []
-                for i in range(spiketrain.shape[1]):
+                for i in range(spiketrain.shape[0]): #over time
                     #send pulse for every bin in the spiketrain
                     port_list = []
                     for idx, j in enumerate(self.neuron_idx):
-                        if j < spiketrain.shape[0]:
-                            if spiketrain[j,i] >0: # check to see if there is any spikes
+                        if j < spiketrain.shape[1]:
+                            if spiketrain[i,j] >0: # check to see if there is any spikes
                                 port_list.append(self.digital_port[idx]) # collect the port to trigger
                         
                     if len(port_list)>0:

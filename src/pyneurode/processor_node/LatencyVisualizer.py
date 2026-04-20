@@ -12,9 +12,8 @@ import random
 
 
 class LatencyVisualizer(Visualizer):
-    def __init__(self, name: str, subplot_size=(3, 3)) -> None:
-        super().__init__(name)
-        self.name = name  # unique identying string for the visualizer
+    def __init__(self, subplot_size=(3, 3)) -> None:
+        super().__init__()
         self.data_count = 0
         self.plot_data_tag = self.name + "_plot_data"
         self.buffer = None

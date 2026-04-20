@@ -102,10 +102,6 @@ class RingBuffer:
             else:
                 self.buffer[self.writeHead():,:] = xs[:data2write,:]
                 self.buffer[:remainData,:] = xs[data2write:,:]
-
-                #keep track of time
-                # self.timestamps[self.writeHead:] = ts_segment[:data2write]
-                # self.timestamps[:remainData] = ts_segment[data2write:]
         else:
             if self.dtype == bytes:
                 self.buffer[self.writeHead():self.writeHead()+xsLength,:] = self.bytes2numpy(xs)
