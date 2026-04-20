@@ -92,8 +92,8 @@ def align_spike_cy(spikes, int chan_per_electrode=4, int search_span = 15, int p
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def template_matching_mse_cy(np.float32_t [:,:] templates, np.float32_t [:,:] spike_waveforms, 
-                                    np.int_t [:] template_electrode_ids, np.int_t [:] electrode_ids):
+def template_matching_mse_cy(np.float32_t [:,:] templates, np.float32_t [:,:] spike_waveforms,
+                                    np.intp_t [:] template_electrode_ids, np.intp_t [:] electrode_ids):
     # Calculate the MSE in pure C for speedup
     
     n_templates = templates.shape[0]
@@ -101,7 +101,7 @@ def template_matching_mse_cy(np.float32_t [:,:] templates, np.float32_t [:,:] sp
     n_spikes = spike_waveforms.shape[0]
     
     # initialize array for results
-    cluster_ids = np.zeros((n_spikes,),dtype=np.int)
+    cluster_ids = np.zeros((n_spikes,),dtype=np.int32)
     cdef int[:] cluster_ids_view = cluster_ids
     
     cdef float mse = 0
@@ -152,7 +152,7 @@ def template_match_all_electrodes_cy(df, templates, template_electrode_id, templ
         pc_norms = np.zeros((len(df), pca_transformers[0].n_components ))
     
     spikes = np.stack(df.spike_waveform.to_numpy())
-    electrode_ids = df.electrode_ids.astype(np.int).to_numpy()
+    electrode_ids = df.electrode_ids.astype(np.intp).to_numpy()
     aligned_waveforms = align_spike_cy(spikes)
     
     # Template match each electrode 
