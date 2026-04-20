@@ -1,4 +1,3 @@
-from cgitb import enable
 import logging
 from typing import List
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
