@@ -30,7 +30,9 @@ import pyneurode.node_editor.node_editor as node_editor
 logging.basicConfig(level=logging.INFO)
 
 if  __name__ == '__main__':
-    templates = np.load('src/pyneurode/data/spikes_waveforms.npy') # cells x electrode x timepoints
+    templates = np.load('data/spikes_waveforms.npy') # cells x electrode x timepoints
+    templates = templates[:,:, np.newaxis, :]
+
     Fs=30000
     # Restrict the size of the template to avoid the waveform alignment to go wrong
     neurons = make_neurons([2,2],firing_rate=[[30,10],[20,30]],firing_time=[[(None),(Fs*30, None)],[(Fs*30,None),(Fs*30,None)]], templates=templates[:,:,:,:130])

@@ -40,3 +40,19 @@ class NumpyMessage(Message):
     dtype = 'numpy'
     def __init__(self, data:np.ndarray, timestamp: Optional[float] = None):
         super().__init__(self.dtype, data, timestamp)
+
+
+class SpikeTrainMessage(Message):
+    """Message that contains the binned spike train
+    spiketrain is in the format (time x neuron)
+    """
+    dtype = 'spike_train'
+
+    def __init__(self, spk_train:np.ndarray):
+        
+        if isinstance(spk_train, np.ndarray):
+            self.data = spk_train
+        else:
+            raise TypeError("The input should be a numpy array")
+        
+        self.timestamp = time.time()

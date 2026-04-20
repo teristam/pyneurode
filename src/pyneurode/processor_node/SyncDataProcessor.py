@@ -7,7 +7,7 @@ import numpy as np
 from pyneurode.processor_node.ADCFileReaderSource import ADCFileReaderSource
 from pyneurode.processor_node.BatchProcessor import BatchProcessor
 from pyneurode.processor_node.FileReaderSource import FileReaderSource
-from pyneurode.processor_node.Message import Message
+from pyneurode.processor_node.Message import Message, NumpyMessage, SpikeTrainMessage
 from pyneurode.processor_node.Processor import *
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 from pyneurode.processor_node.TemplateMatchProcessor import SpikeTrainMessage
@@ -59,7 +59,7 @@ class SyncDataProcessor(BatchProcessor):
 
         # prcoess each messages
         for d in data:
-            if d.type == 'adc_data':
+            if isinstance(d, NumpyMessage):
                 adc_data_list.append(d.data)
             elif isinstance(d,SpikeTrainMessage):
                 spike_data_list.append(d.data)
@@ -108,7 +108,7 @@ class SyncDataProcessor(BatchProcessor):
                 self.reset_buffer(spike_train_channels=spike_train.shape[1])
                 self.spike_buffer.write(spike_train) # time x channel
         
-        msg_data_types = [d.type for d in data]
+        msg_data_types = [d.dtype for d in data]
         # self.log(logging.DEBUG, f'Processing data: {Counter(msg_data_types)}')
 
         if self.spike_buffer is not None:
