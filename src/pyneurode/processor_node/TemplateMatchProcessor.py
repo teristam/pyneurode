@@ -160,7 +160,7 @@ class TemplateMatchProcessor(BatchProcessor):
                 
                 return (SpikeTrainMessage(spk_train.T), SortedSpikeMessage(self.df_sort), metrics_msg)
             else:
-                (SpikeTrainMessage(spk_train.T), SortedSpikeMessage(self.df_sort))
+                return (SpikeTrainMessage(spk_train.T), SortedSpikeMessage(self.df_sort))
 
 
 class SpikeTrainMessage(Message):
