@@ -1,2 +1,40 @@
 [build-system]
 requires = ['setuptools', 'wheel', 'Cython', 'numpy']
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyneurode"
+version = "0.1.0"
+authors = [
+    {name = "Teris Tam"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "matplotlib",
+    "dearpygui",
+    "scikit-learn",
+    "seaborn",
+    "numpy",
+    "shortuuid",
+    "networkx",
+    "pyzmq",
+    "jupyterlab",
+    "scipy",
+    "Cython",
+    "Sphinx",
+    "myst-parser",
+    "palettable",
+    "tqdm",
+    "pytest",
+    "sphinx_rtd_theme",
+    "pyfirmata",
+    "pyserial",
+    "isosplit5",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.uv.sources]
+isosplit5 = { git = "https://github.com/magland/isosplit5_python" }
