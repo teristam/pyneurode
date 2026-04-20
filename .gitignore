@@ -140,3 +140,5 @@ sorting_tmp/
 doc/_build/
 
 data
+
+spike_sorter_cy.c

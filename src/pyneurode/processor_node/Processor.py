@@ -16,6 +16,45 @@ from dataclasses import dataclass
 from functools import wraps
 from multiprocessing import *
 from queue import Empty
+
+
+class CountedQueue:
+    """multiprocessing.Queue wrapper with a cross-process-safe qsize() counter.
+
+    macOS does not implement sem_getvalue(), so the standard Queue.qsize() raises
+    NotImplementedError there. This class maintains a multiprocessing.Value counter
+    that is incremented on put() and decremented on get(), making qsize() reliable
+    on all platforms.
+    """
+
+    def __init__(self):
+        self._queue = Queue()
+        self._count = Value('i', 0)
+
+    def put(self, item, block=True, timeout=None):
+        self._queue.put(item, block=block, timeout=timeout)
+        with self._count.get_lock():
+            self._count.value += 1
+
+    def get(self, block=True, timeout=None):
+        item = self._queue.get(block=block, timeout=timeout)
+        with self._count.get_lock():
+            self._count.value = max(0, self._count.value - 1)
+        return item
+
+    def qsize(self):
+        return self._count.value
+
+    def empty(self):
+        return self._count.value == 0
+
+    def close(self):
+        self._queue.close()
+
+    def join_thread(self):
+        self._queue.join_thread()
+
+
 from typing import *
 
 import numpy as np
@@ -89,7 +128,7 @@ class Processor(Context):
         self.proc_name = self.__class__.__name__ +'_'+ shortuuid.ShortUUID().random(5) #unique identying string for the processor
         self.log = functools.partial(logger, self.proc_name)
         self.shutdown_event = None
-        self.in_queue = Queue()
+        self.in_queue = CountedQueue()
         self.log(logging.DEBUG, 'Initializing')
         self.latency = None #processing latency
         self.run_count = 0
@@ -177,7 +216,7 @@ class Processor(Context):
             try:
                 data = self.in_queue.get(block=True, timeout=self.QUEUE_PULL_TIMEOUT)
                 if self.in_queue.qsize() > 1000:
-                    self.log(logging.WARNING,'in-queue size is larger than 1000. Error may occur')
+                    self.log(logging.WARNING, 'in-queue size is larger than 1000. Error may occur')
                 processed_data = self._process(data)
                 if isinstance(processed_data,list):
                     for d in processed_data:

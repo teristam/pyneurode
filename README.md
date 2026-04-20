@@ -10,3 +10,10 @@ For technical details please see our [preprint](https://www.biorxiv.org/content/
 Please see the [documentation](https://pyneurode.readthedocs.io/en/latest/) for how to use the library.
 
 The project is still under heavy development. Please submit an issue if you encounter any problem.
+
+
+Basic example:
+examples/workflows/sorter_node_editor.py
+
+Advanced example:
+examples/workflows/sorter_node_openephys_sim_node_editor.py
