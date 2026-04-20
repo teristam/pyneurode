@@ -127,7 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-*.pkl
 data_list.pkl
 data/
 mountainsort4_output/
@@ -139,6 +138,6 @@ sorting_tmp/
 # Sphinx
 doc/_build/
 
-data
+data/
 
 spike_sorter_cy.c
