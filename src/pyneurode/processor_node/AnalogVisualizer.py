@@ -57,7 +57,7 @@ class AnalogVisualizer(Visualizer):
 
     def update(self, messages: List[Message]):
         # message data format time x channel
-        if self.buffer is None:
+        if self.buffer is None and len(messages)>0:
             self.buffer = RingBuffer((self.buffer_length, messages[0].data.shape[1]))
         
         for m in messages:
