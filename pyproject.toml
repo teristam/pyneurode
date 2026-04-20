@@ -34,6 +34,7 @@ dependencies = [
     "gitpython>=3.1.46",
     "ipykernel>=7.2.0",
     "igraph>=1.0.0",
+    "python-osc>=1.10.2",
 ]
 
 [tool.setuptools.packages.find]
