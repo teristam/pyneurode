@@ -87,8 +87,7 @@ def sort_spikes(spike_waveforms, eps=1,pca_component=6, min_samples=5,clusterMet
 
 def generate_spike_templates(df):
     #Calculate template
-    df_cluster = df.groupby('cluster_id').mean().reset_index()
-    cluster_electrode_ids = dict(zip(df_cluster.cluster_id.values, df_cluster.electrode_ids.values))
+    cluster_electrode_ids = df.groupby('cluster_id')['electrode_ids'].first().to_dict()
 
     spike_waveforms = np.stack(df.spike_waveform_aligned.values)
     cluster_id = df.cluster_id.values
