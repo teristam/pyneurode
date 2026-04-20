@@ -32,6 +32,7 @@ dependencies = [
     "pyserial",
     "isosplit5",
     "gitpython>=3.1.46",
+    "ipykernel>=7.2.0",
 ]
 
 [tool.setuptools.packages.find]

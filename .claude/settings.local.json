@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(uv pip *)"
+      "Bash(uv pip *)",
+      "Bash(python -c \"import MEArec as mr; help\\(mr.gen_recordings\\)\")",
+      "Bash(python -c \"import MEArec as mr; p = mr.get_default_recordings_params\\(\\); import json; print\\(json.dumps\\(p, indent=2, default=str\\)\\)\")",
+      "Bash(uv run *)"
     ]
   }
 }
