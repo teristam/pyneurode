@@ -189,7 +189,8 @@ class SpikeClusterVisualizer(Visualizer):
         # Note: when there are lots of message, this part will be super slow, may make more sense to discard some of the data
         # since it is only for visualization
         
-        
+        if len(messages) == 0:
+            return 
         df = pd.concat([m.data for m in  messages])
         
         # clear current wavefroms if it is using a new template
