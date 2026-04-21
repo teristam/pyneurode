@@ -2,7 +2,7 @@ from __future__ import annotations
 from collections import defaultdict # for postponed evaluation
 from multiprocessing import Event
 
-from pyparsing import Optional
+from typing import Optional
 from pyneurode.processor_node.Processor import ProcessError, Processor
 from pyneurode.processor_node.Message import Message
 from .BatchProcessor import BatchProcessor

@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
         gui.register_visualizer(syncDataProcessor, analog_visualizer)
         gui.register_visualizer(source, pos_visualizer)
-        gui.register_visualizer(templateMatchProcessor, cluster_vis)
+        gui.register_visualizer(templateMatchProcessor, cluster_vis, control_targets=templateTrainProcessor)
         gui.register_visualizer(templateTrainProcessor, latency_vis)
 
         NodeManager(ctx)
