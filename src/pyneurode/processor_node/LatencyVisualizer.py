@@ -13,7 +13,7 @@ import random
 
 class LatencyVisualizer(Visualizer):
     def __init__(self, subplot_size=(3, 3)) -> None:
-        super().__init__()
+        super().__init__(filters=['metrics'])
         self.data_count = 0
         self.plot_data_tag = self.name + "_plot_data"
         self.buffer = None

@@ -122,7 +122,7 @@ class SyncDataProcessor(BatchProcessor):
                     self.readHead += data2read
                     return Message('synced_data', msg_data)
   
-            else:
+            elif self.adc_buffer is not None:
                 # Find the minimum of the write head, and then send them
                 curReadHead = min(self.spike_buffer.absWriteHead, self.adc_buffer.absWriteHead)
                 data2read = curReadHead - self.readHead 

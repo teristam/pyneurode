@@ -449,6 +449,13 @@ class FileEchoSource(TimeSource):
         self.last_msg = None
         self.batch_size = batch_size
 
+    @staticmethod
+    def _wrap_adc(msg: Message) -> Message:
+        from pyneurode.processor_node.Message import NumpyMessage
+        if msg.dtype == 'adc_data':
+            return NumpyMessage(msg.data, msg.timestamp)
+        return msg
+
     def startup(self):
         super().startup()
         self.datafile = open(self.filename, 'rb')
@@ -463,9 +470,9 @@ class FileEchoSource(TimeSource):
                     msg = pickle.load(self.datafile)
                     if type(msg) is list:
                         if len(msg)>0:
-                            self.data = self.data + msg
+                            self.data = self.data + [self._wrap_adc(m) for m in msg]
                     elif type(msg) is Message:
-                        self.data.append(msg)
+                        self.data.append(self._wrap_adc(msg))
                     else:
                         raise TypeError(f'Datatype {type(msg)} is not supported')
                 except EOFError:

@@ -20,9 +20,9 @@ import warnings
 
 
 class SpikeTemplateMessage(Message):
-    type = 'spike_template_message'
+    dtype = 'spike_template_message'
     def __init__(self, templates, template_cluster_id, template_electrode_id,pca_transformers=None, standard_scalers=None, membership_model=None):
-        self.data = {
+        data = {
             'templates':templates,
             'template_cluster_id': template_cluster_id,
             'template_electrode_id': template_electrode_id,
@@ -30,11 +30,12 @@ class SpikeTemplateMessage(Message):
             'standard_scalers': standard_scalers,
             'membership_models': membership_model
         }
-        
+        super().__init__(self.dtype, data)
+
 class RecomputeTemplateControlMessage(Message):
-    type = 'recompute_template'
+    dtype = 'recompute_template'
     def __init__(self):
-        super().__init__(self.type, None, None)
+        super().__init__(self.dtype, None, None)
 
 class MountainsortTemplateProcessor(BatchProcessor):
     """Create spikes template using isosplit from mountainsort

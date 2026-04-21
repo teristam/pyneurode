@@ -69,11 +69,9 @@ class GUIProcessor(BatchProcessor):
         
         for v in visualizers:
             print(f'Registering {source_processor.proc_name} to {v.name}')
-            if not v in self.source_visualizer_map:
+            if source_processor.proc_name not in self.source_visualizer_map:
                 self.source_visualizer_map[source_processor.proc_name] = []
-                self.source_visualizer_map[source_processor.proc_name].append(v)
-            else:
-                self.source_visualizer_map[source_processor.proc_name].append(v)
+            self.source_visualizer_map[source_processor.proc_name].append(v)
 
         # for f in visualizer.filters:
         #     print(f'registering {f.dtype} to {visualizer}')
@@ -150,7 +148,9 @@ class GUIProcessor(BatchProcessor):
         for source, msgs in source_list.items():
             if source in self.source_visualizer_map:
                 for v in self.source_visualizer_map[source]:
-                    msg2show = [m for m in msgs if type(m) in v.filters]
+                    msg2show = [m for m in msgs if not v.filters or any(
+                        (isinstance(f, str) and m.dtype == f) or (isinstance(f, type) and isinstance(m, f))
+                        for f in v.filters)]
                     msg = v._refresh(msg2show) #send all messages at once
                     if v in self.control_targets:
                         for target in self.control_targets[v]:
