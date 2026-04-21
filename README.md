@@ -12,8 +12,17 @@ Please see the [documentation](https://pyneurode.readthedocs.io/en/latest/) for 
 The project is still under heavy development. Please submit an issue if you encounter any problem.
 
 
-Basic example:
-examples/workflows/sorter_node_editor.py
+## Installation
+1. Install uv for your platform [link](https://docs.astral.sh/uv/getting-started/installation/)
+2. Clone this repository
+3. Under project root, run `uv sync`
 
-Advanced example:
-examples/workflows/sorter_node_openephys_sim_node_editor.py
+Note: you will need to have build tools (MSVC, clang etc) to build the `isosplit` package required by pyneurode.
+
+## Usage
+
+Consult the examples workflow in the `example/workflows` folder. 
+To run the workflow, e.g.
+```
+uv run examples\workflows\sorter_node_openephys_replay.py
+```
