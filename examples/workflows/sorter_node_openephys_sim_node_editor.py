@@ -26,7 +26,7 @@ dpg.create_context()
 
 if __name__ == "__main__":
     templates = np.load(
-        "example/spikes/spikes_waveforms.npy"
+        "examples/spikes/spikes_waveforms.npy"
     )  # cells x tetrode x channel x time
 
     Fs = 30000
