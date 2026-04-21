@@ -356,5 +356,5 @@ class NodeManager():
         except KeyboardInterrupt:
             pass
         finally:
-            dpg.destroy_context()
+            dpg.destroy_context() # stop child processes
         
