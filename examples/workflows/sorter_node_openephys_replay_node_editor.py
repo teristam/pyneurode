@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
     with ProcessorContext(auto_start=False) as ctx:
         # reading too fast may overflow the pipe
-        zmqSource = FileEchoSource(interval=0.01, filename='data/M7_2022-07-16_17-17-33_test1/packets_new.pkl',
+        zmqSource = FileEchoSource(interval=0.01, filename='examples/spikes/test_packets_short.pkl',
                                    filetype='message', batch_size=3)
 
         # zmqSource = ZmqSource(adc_channel=20,time_bin = 0.01)
