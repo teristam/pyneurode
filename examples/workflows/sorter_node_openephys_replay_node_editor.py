@@ -66,5 +66,4 @@ if __name__ == '__main__':
         gui.register_visualizer(templateTrainProcessor, latency_vis)
         gui.register_visualizer(syncDataProcessor, analogControl, control_targets=zmqPublisherSink)
 
-        ctx.start()
-        ctx.shutdown_event.wait()  # block until GUIProcessor closes its window and sets shutdown_event
+        NodeManager(ctx)
