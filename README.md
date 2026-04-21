@@ -3,7 +3,7 @@
 # pyneurode
 pyneurode (Python + neuron + node) is a real-time signal processing framework for neural recordings, with a special focus on online spike sorting and neural signal decoding in the Open Ephys GUI. It has a robust architecture for parallel processing and can sort hundreds of channel of tetrode signals in real-time.
 
-![Figure 2](https://user-images.githubusercontent.com/3406709/177898032-09121473-66c1-4b1d-843a-4b82b1a73bd1.png)
+<img width="2721" height="1483" alt="screenshot2" src="https://github.com/user-attachments/assets/0cb2bb78-e842-4e79-bc06-d2d63363f40c" />
 
 For technical details please see our [preprint](https://www.biorxiv.org/content/10.1101/2022.01.18.476764v1)
 
