@@ -1,4 +1,5 @@
 import pickle
+from random import sample
 
 # import matplotlib.pylab as plt
 import numpy as np
@@ -17,6 +18,39 @@ from isosplit5 import isosplit5
 from scipy import spatial
 import warnings
 from .spike_sorter_cy import align_spike_cy
+from scipy import stats
+
+
+def branch_cluster(features, *, branch_depth: int=2):
+    ## Modified from https://github.com/magland/mountainsort4
+    # direclty use the provided PCA features
+    # features should be in the form [feature, samples]
+    # print('Running branch_cluster')
+
+    if features.size == 0:
+        return np.array([])
+
+    min_size_to_try_split = 20
+    labels1 = isosplit5(features)
+    
+    K = int(np.max(labels1))
+    if K <= 1 or branch_depth <= 1:
+        return labels1
+    label_offset = 0
+    labels_new = np.zeros(labels1.shape, dtype='int64')
+    for k in range(1, K+1):
+        inds_k = np.where(labels1 == k)[0]
+        if len(inds_k) > min_size_to_try_split:
+            labels_k = branch_cluster(
+                features[:, inds_k], branch_depth=branch_depth-1)
+            K_k = int(np.max(labels_k))
+            labels_new[inds_k] = label_offset+labels_k
+            label_offset += K_k
+        else:
+            labels_new[inds_k] = label_offset+1
+            label_offset += 1
+    return labels_new
+
 
 def sort_spikes(spike_waveforms, eps=1,pca_component=6, min_samples=5,clusterMethod=None):
     start = time.time()
@@ -28,9 +62,11 @@ def sort_spikes(spike_waveforms, eps=1,pca_component=6, min_samples=5,clusterMet
         pc = pca_transformer.transform(spike_waveforms)
         standard_scaler = StandardScaler().fit(pc)
         pc_norm = standard_scaler.transform(pc) #normalize the pca data
-        labels = isosplit5(pc_norm.T)
+        # labels = isosplit5(pc_norm.T)
 
-        print('use normalized pc')
+        labels = branch_cluster(pc_norm.T)
+
+        # print('use normalized pc')
     else:
         print('Not enough spikse to sort waveform')
         pca_transformer = None
@@ -39,12 +75,6 @@ def sort_spikes(spike_waveforms, eps=1,pca_component=6, min_samples=5,clusterMet
         pc_norm = None
         labels = None
 
-    #clustering
-    # db = DBSCAN(eps=eps,min_samples=min_samples).fit(pc_norm)
-    # db = cluster.OPTICS(min_samples=min_samples,max_eps=eps).fit(pc_norm)
-    # db = cluster.MeanShift(bin_seeding=True).fit(pc_norm)
-    # labels = db.labels_
-    # print(f'Clustering took {time.time()-start:.3f} s')
 
     return labels, pc_norm, pca_transformer, standard_scaler
 
@@ -57,8 +87,7 @@ def sort_spikes(spike_waveforms, eps=1,pca_component=6, min_samples=5,clusterMet
 
 def generate_spike_templates(df):
     #Calculate template
-    df_cluster = df.groupby('cluster_id').mean().reset_index()
-    cluster_electrode_ids = dict(zip(df_cluster.cluster_id.values, df_cluster.electrode_ids.values))
+    cluster_electrode_ids = df.groupby('cluster_id')['electrode_ids'].first().to_dict()
 
     spike_waveforms = np.stack(df.spike_waveform_aligned.values)
     cluster_id = df.cluster_id.values
@@ -67,41 +96,118 @@ def generate_spike_templates(df):
     # template_cluster_id contains the cluster_id for each template
     templates,template_cluster_id = calculate_spike_template(spike_waveforms,cluster_id)
     template_electrode_id = np.array([int(cluster_electrode_ids[i]) for i in template_cluster_id]) #which electrode the template are from
-    return (templates, template_cluster_id, template_electrode_id)
+    
+    # build model for distance
+    models = estimate_distance_model(templates, template_cluster_id, spike_waveforms, cluster_id)
+    
+    return (templates, template_cluster_id, template_electrode_id, models)
 
-def calculate_spike_template(spike_waveforms, cluster_ids):
+def estimate_distance_model(templates, template_cluster_id, spike_waveform_aligned, cluster_ids, metric='mse'):
+    '''
+    Build a normal distribution for each cluster
+    '''
+    
+    
+    cluster_dist = []
+    for i,tid in enumerate(template_cluster_id):
+        
+        spike_waveform = spike_waveform_aligned[cluster_ids==template_cluster_id[i]]
+        
+        assert spike_waveform.shape[0] > 0
+                
+        if metric=='mse':
+            d = np.mean((spike_waveform - templates[i,:])**2,axis=1) # MSE is equivalent to Euclidean distance
+        else:     
+            d = spatial.distance.cdist(spike_waveform, templates[[i],:], metric='cosine') #to keep 2D dimension
+                
+
+        # Fit normal distribution
+        mean = np.mean(d)
+        std = np.std(d)
+        cluster_dist.append({'mean':mean, 'std':std})
+        
+    return cluster_dist
+
+def find_similar_template(templates,threshold=0.95):
+    # return the idx of the templates thare are very similar to each other
+    # output is a 2 item tuple containing the index in each dimension
+
+    cor = np.zeros((templates.shape[0], templates.shape[0]))
+
+    # only calculate half of the matrix
+    for i in range(len(cor)):
+        for j in range(i+1,len(cor)):
+            cor[i,j] = stats.pearsonr(templates[i,:], templates[j,:]).statistic
+
+    idx = (cor>0.95).nonzero()
+    
+    return idx
+
+        
+
+def calculate_spike_template(spike_waveforms, cluster_ids, merge_similar=True):
     # Calculate the templates for neurons
     # spike_waveforms should be [n x time]
     # Will remove outliner cluster (-1) automatically
+    # merge_similar: whether to merge similar template
+    
     spike_waveforms = spike_waveforms[cluster_ids!=-1] 
     cluster_ids = cluster_ids[cluster_ids!=-1]
     label_unique = np.unique(cluster_ids)
     template = np.zeros((len(label_unique), spike_waveforms.shape[1]),dtype=np.float32)
     for i,lbls in enumerate(label_unique):
         template[i,:] =spike_waveforms[cluster_ids==lbls,:].mean(axis=0)
+        # template[i,:] =np.median(spike_waveforms[cluster_ids==lbls,:],axis=0)
+        
+    idx2merge = find_similar_template(template)
+    if merge_similar and len(idx2merge) > 0:
+        print(f'Find ver similar templates. Atttempting to merge: {idx2merge}')
+
+        # remove the templates that already has a close match
+        idx2keep = np.setdiff1d(np.arange(template.shape[0]), idx2merge[1])
+        template = template[idx2keep]
+        label_unique = label_unique[idx2keep]
+
 
     return template, label_unique
 
 
-def template_matching(templates, spike_waveform,metrics='mse', calculate_norm_dist=True):
+def guassmf(x, mean, sigma):
+    # Guassian membership function to estimate the probability
+    
+    return np.exp(-((x-mean)**2) / sigma**2)
+
+def template_matching(templates, spike_waveform,metrics='mse', dist_model=None, dist_threshold=0.05, 
+                      return_prob=True):
     # Match a spike waveform to template
     # return the index of minimum template, as well as the distance
     # TODO: reject outliner
+    
+    
+    if dist_model is not None:
+        assert len(templates) == len(dist_model)
 
     if metrics=='mse':
         d = np.mean((spike_waveform - templates)**2,axis=1) # MSE is equivalent to Euclidean distance
     else:
-        d= np.zeros((templates.shape[0],))
-        for i in range(templates.shape[0]):
-            d[i] = spatial.distance.cosine(spike_waveform, templates[i,:])
+     
+        d = spatial.distance.cdist(spike_waveform, templates, metric='cosine')
 
     # d = np.sum(spike_waveform*templates)
     idx = np.argmin(d)
-
-    if calculate_norm_dist:
-        dist = np.min(d)
-        norm_dist = dist/np.std(spike_waveform)
-        return idx, norm_dist
+    min_d = np.min(d)
+    
+    prob = None
+    
+    # check the probability
+    if dist_model is not None:
+        prob = guassmf(min_d, dist_model[idx]['mean'], dist_model[idx]['std'])
+        if prob<dist_threshold:
+            # distance outside range
+            idx = -1 # mark as outliner
+            
+    if return_prob:
+        return idx, prob
     else:
         return idx
 
@@ -128,7 +234,7 @@ def align_spike(spikes, chan_per_electrode=4, search_span = 15, pre_peak_span=15
     # ax[1].plot(abs_spike.T)
 
     #Create a mask to restrict the search region
-    # set the signal output the mask to be zero
+    # set the signal outside the mask to be zero
     mask = np.zeros_like(abs_spike)
     search_region = [np.arange(spike_length/2-search_span,spike_length/2+search_span)
         +i*spike_length for i in range(chan_per_electrode) ]
@@ -172,8 +278,13 @@ def align_spike(spikes, chan_per_electrode=4, search_span = 15, pre_peak_span=15
             spk = np.pad(spk, [[0,0],[second_half_length - first_half_length,0]])
 
         spikes_aligned[i,:] = spk.ravel() #flatten
+        
+        
+        #TODO also return the aligned timestamp
 
-    return spikes_aligned
+    aligned_timestamp_delta = idx_rel_chan-spike_length/2
+    
+    return spikes_aligned, aligned_timestamp_delta
 
 
 def makeSpikeDataframe(spikeEvent):
@@ -195,6 +306,7 @@ def makeSpikeDataframe(spikeEvent):
     spikelength = spikedata.shape[2]
     spikeN = spikedata.shape[0]
     chanN = spikedata.shape[1]
+    assert chanN < spikelength, f'Error, the spike shape does not seem right, it should be (N, chanN, samples) now it is {spikedata.shape}'
     channel_id = np.repeat(np.arange(chanN),spikelength)
     channel_ids = np.tile(channel_id, (spikeN,1) )
 
@@ -209,6 +321,8 @@ def makeSpikeDataframe(spikeEvent):
         'timestamps':timestamps,
         'acq_timestamps': acq_timestamps
     })
+    
+    df = df.sort_values('timestamps')
 
     return df 
 
@@ -222,18 +336,19 @@ def makeChannelIdsCol(spikeLength, chan_per_electrode,spikeN):
 def makeSpikeTimeCol(spikeLength,spikeN):
     # make new time col with new spike length
     t = np.arange(spikeLength)
-    t = np.arange(spikeLength)
+    # t = np.arange(spikeLength)
     t = np.tile(t, (spikeN,1))
     return pd.Series(list(t))
 
 def addAlignedSpike2df(df,channel_per_electrode=4):
     #Aligned spike and add to dataframe
     spike_waveforms = np.stack(df.spike_waveform.values)
-    spike_waveforms = align_spike(spike_waveforms)
+    spike_waveforms, aligned_timestamp_delta = align_spike(spike_waveforms)
     spikeN,spikeLength = spike_waveforms.shape
     df['spike_waveform_aligned'] = spike_waveforms.tolist() #don't create pd.Series first, will lead to bug if df index has duplicates
     df['time_aligned'] = makeSpikeTimeCol(spikeLength,spikeN)
     df['channel_ids_aligned'] = makeChannelIdsCol(spikeLength, channel_per_electrode,spikeN)
+    df['timestamp_aligned'] = df['timestamps'] - aligned_timestamp_delta
     # assert False
     return df
 
@@ -258,9 +373,12 @@ def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1,
     #make pca columns
     for i in range(pca_component):
         df[f'PC{i}'] = np.nan
+        
+    df['pc_norm'] = np.zeros((len(df),pca_component)).tolist()
 
     pca_transformers = {}
     standard_scalers = {}
+    pc_norm_list = []
 
     for e_ids in elect_ids:
         if verbose:
@@ -273,35 +391,56 @@ def sort_all_electrodes(df,channel_per_electrode=4,do_align_spike=True, eps = 1,
             spike_waveforms = np.stack(df_elec.spike_waveform_aligned.values)
         else:
             spike_waveforms = np.stack(df_elec.spike_waveform.values)
+            
         # sort spikes
+        # print(spike_waveforms.shape)
         labels,pc_norm,pca_transformer,standard_scaler = sort_spikes(spike_waveforms,eps=eps, pca_component=pca_component)
         pca_transformers[e_ids] = pca_transformer
         standard_scalers[e_ids] = standard_scaler
+        
         #
         if labels is not None:
             df.loc[df.electrode_ids==e_ids,'cluster_id'] = [int((e_ids+1)*100 +(l+1)) for l in labels] #make unique id for each electrode
         else:
            df.loc[df.electrode_ids==e_ids,'cluster_id'] = -1
-
+        
+        # Need to make an array of list, so that we can assign it to the dataframe column
+        if pc_norm is not None:
+            # sometimes there may not be enough spike to calcualte the PCA
+            pc_norm_list = np.empty(pc_norm.shape[0], dtype=object)
+            pc_norm_list[:] = pc_norm.tolist()
+            df.loc[df.electrode_ids==e_ids,'pc_norm'] = pc_norm_list
+        
+        # assert np.all([len(df.iloc[i].pc_norm)==pca_component for i in range(len(df))])
+            
     return df, pca_transformers,standard_scalers
 
 
-def sort_spike_row(row, templates, template_cluster_id, template_electrode_id, pca_transformers, standard_scalers):
+def sort_spike_row(row, templates, template_cluster_id, template_electrode_id, pca_transformers, standard_scalers, 
+                   dist_model=None, dist_threshold = 0.05):
     # print(row)
     t = time.perf_counter()
     spike = row.spike_waveform
     electrode_id = row.electrode_ids
-    spike = align_spike(spike)
+    spike, aligned_timestamp_delta = align_spike(spike)
     aligned_waveform = spike.squeeze()
     neigbour_idx = np.where(template_electrode_id == electrode_id)[0] # do sorting independently for each electrode
-
+    dist_model_neighbour = [dist_model[i] for i in neigbour_idx]
+    
     if len(neigbour_idx) > 0:
-        idx = template_matching(templates[neigbour_idx,:], spike, calculate_norm_dist=False)
-        labels_template = template_cluster_id[neigbour_idx[idx]]
+        idx, prob = template_matching(templates[neigbour_idx,:], spike, dist_model=dist_model_neighbour,
+                                dist_threshold=dist_threshold,
+                                return_prob=True)
+        if idx>=0:
+            labels_template = template_cluster_id[neigbour_idx[idx]]
+        else:
+            #outliner
+            labels_template = '-1'
     else:
         # no template found for a particular electrode
         # make them unclassified
         labels_template = '-1'
+        prob = 0
 
     if pca_transformers is not None:
         #Also do the PCA transform for monitoring purpose
@@ -316,16 +455,18 @@ def sort_spike_row(row, templates, template_cluster_id, template_electrode_id, p
             
            
 
-    return labels_template,aligned_waveform, time.perf_counter() - t, pc_norm
+    return labels_template,aligned_waveform, time.perf_counter() - t, pc_norm, prob
 
-def template_match_all_electrodes_fast(df, templates, template_electrode_id,template_cluster_id, pca_transformers=None, standard_scalers=None):
+def template_match_all_electrodes_fast(df, templates, template_electrode_id,template_cluster_id,
+                                       dist_model=None, dist_threshold=0.05,
+                                       pca_transformers=None, standard_scalers=None):
     ''' 
     Match input spike wavefrom to the closest template, matching is done on each tetrode independently
     '''
     # apply is faster than iterrows()
     results = df.apply(sort_spike_row,axis=1, 
-        args=(templates, template_cluster_id, template_electrode_id, pca_transformers, standard_scalers), result_type='expand')
-    df[['cluster_id', 'spike_waveform_aligned','sorting_time', 'pc_norm']] = results
+        args=(templates, template_cluster_id, template_electrode_id, pca_transformers, standard_scalers, dist_model, dist_threshold), result_type='expand')
+    df[['cluster_id', 'spike_waveform_aligned','sorting_time', 'pc_norm', 'prob']] = results
 
     df.cluster_id = df.cluster_id.astype(int)
 
@@ -398,15 +539,17 @@ def template_match_all_electrodes(df, templates, template_electrode_id, template
     norm_dist_template = []
     aligned_waveforms = []
     pc_norms = []
+    time_deltas = []
 
     for _,row  in df.iterrows():
         # align the spike, separate them into their respective tetrodes
         # then match with templates
         spike = row.spike_waveform
         electrode_id = row.electrode_ids
-        spike = align_spike(spike)
+        spike, aligned_timestamp_delta = align_spike(spike)
         aligned_waveforms.append(spike.squeeze())
         neigbour_idx = np.where(template_electrode_id == electrode_id)[0] # do sorting independently for each electrode
+        time_deltas.append(aligned_timestamp_delta)
 
         if len(neigbour_idx) > 0:
             idx,norm_dist = template_matching(templates[neigbour_idx,:], spike)
@@ -434,6 +577,8 @@ def template_match_all_electrodes(df, templates, template_electrode_id, template
     df['cluster_id'] = labels_template #make plotting program aware this is a categorical variable
     df['dist_tm'] = norm_dist_template
     df['spike_waveform_aligned'] = aligned_waveforms
+    time_deltas = np.concatenate(time_deltas)
+    df['timestamps_aligned'] = df['timestamps'] - np.array(time_deltas)
     if pca_transformers is not None:
         df['pc_norm'] = pc_norms
 
@@ -443,6 +588,7 @@ def template_match_all_electrodes(df, templates, template_electrode_id, template
 def sort2spiketrain(unique_cluster_id, cluster_ids, spiketime,bins):
     #convert sorted clusters to spiketrain
     #TODO: better way to handle channels that has no spikes
+    # output of spiketrain is (neuron x time)
 
     spike_train = np.zeros((len(unique_cluster_id),
         len(bins)-1))
@@ -451,8 +597,8 @@ def sort2spiketrain(unique_cluster_id, cluster_ids, spiketime,bins):
         st = spiketime[cluster_ids==cid]
         spike_time_event.append(st)
         spike_train[i,:] = np.histogram(st,bins)[0]
-        if not spike_train[i,:].sum() == len(st):
-            warnings.warn(f'Some spikes not processed. id: {spike_train[i,:].sum()} vs {len(st)} \n {st} {bins}')
+        # if not spike_train[i,:].sum() == len(st):
+        #     warnings.warn(f'Some spikes not processed. id: {spike_train[i,:].sum()} vs {len(st)} \n {st} {bins}')
 
     return spike_train, spike_time_event
 
@@ -503,8 +649,7 @@ def makeTuningDataframe(position,fr,time_bin):
 def sort_spikes_online(df_ref, df2sort, eps=1, pca_component=6):
     df_ref = df_ref.copy()
     df2sort = df2sort.copy()
-    df_sorted,pca_transformers = sort_all_electrodes(df_ref, eps=eps, pca_component=pca_component)
-
+    df_sorted,pca_transformers,standard_scalers = sort_all_electrodes(df_ref, eps=eps, pca_component=pca_component)
     # calculate templates
     df_cluster = df_sorted.groupby('cluster_id').mean().reset_index()
     cluster_electrode_ids = dict(zip(df_cluster.cluster_id.values, df_cluster.electrode_ids.values))
@@ -529,12 +674,12 @@ def sort_spikes_online(df_ref, df2sort, eps=1, pca_component=6):
 
     for e_ids in df_sorted_all.electrode_ids.unique():
         spike_waveforms = np.stack(df_sorted_all[df_sorted_all.electrode_ids==e_ids].spike_waveform.values)
-        spike_waveforms = align_spike(spike_waveforms)
+        spike_waveforms,aligned_timestamp_delta = align_spike(spike_waveforms)
         # print(spike_waveforms.shape)
         pc = pca_transformers[e_ids].transform(spike_waveforms)
         df_sorted_all.loc[df_sorted_all.electrode_ids==e_ids, [f'PC{i}' for i in range(pca_component)]] = pc
 
-    return df_sorted, df_sorted_all,template_cluster_id
+    return df_sorted, df_sorted_all,template_cluster_id, templates
 
 
 
@@ -591,21 +736,25 @@ class SpikeEvent:
         self.electrode_id = electrode_id
         self.timestamp = timestamp
         self.data = spikedata
+        self.acq_timestamp = None
     
     def __str__(self):
         return f'electrode_id: {self.electrode_id}, timestamp: {self.timestamp}, spikedata: {self.data.shape}'
         
 
-def detectSpike(data,factor=4, useAbsoluteThres=False, preSample=20, postSample=20):
-    # Detect spike based on median threshold
-
+def detectSpike(data,factor=4, method='median', useAbsoluteThres=False, preSample=20, postSample=20, ntetrode=4):
+    # Detect spike based on threshold, can either be median or absolute
+    # input data should be in the shape of (channel x time)
+    
     spikes_list = []
     sampleIndex = preSample
     absData = np.abs(data)
-    m = np.median(absData,axis=1)
-    print(f'Spike threshold: {m}')
     
-    for electrode in tqdm(range(4)):
+    if method=='median':
+        m = np.median(absData,axis=1) 
+        print(f'Spike threshold: {m}')
+    
+    for electrode in tqdm(range(ntetrode)):
         sampleIndex = preSample
                 
         # with tqdm(total=absData.shape[1]) as pbar:
@@ -613,32 +762,36 @@ def detectSpike(data,factor=4, useAbsoluteThres=False, preSample=20, postSample=
 
             for channel in range(4):
                 idx = electrode*4+channel
-#                     if(absData[idx,sampleIndex]>factor*m[idx]):
-                if not useAbsoluteThres:
+
+                if method=='median':
                     thres = factor*m[idx]
                 else:
                     thres = factor
+                
+                # At the current sample index, check all channel to see if any data point exceed the threshold
                 if(data[idx,sampleIndex]<-thres): #only detect negative spike
 
                     #trigger spike
                     #find maximum
 #                         peakIdx = np.argmax(absData[idx,(sampleIndex-preSample):(sampleIndex+postSample)])
-                    peakIdx = np.argmin(data[idx,(sampleIndex-preSample):(sampleIndex+postSample)])
-
-                    peakIdx = sampleIndex-preSample+peakIdx #shift to refer to the whole array
+                    # peakIdx = np.argmin(data[idx,(sampleIndex-preSample):(sampleIndex+postSample)])
+                    # peakIdx = sampleIndex-preSample+peakIdx #shift to refer to the whole array
+                    
+                    # do not align spike at this stage, to avoid overlapping spike causing issue
+                    # otherwise two spike may have the same timestamp
+                    peakIdx = sampleIndex 
+                    
 #                     print(peakIdx)
                     # record down the spike waveform
-                    spikedata = data[electrode:electrode+4, (peakIdx-preSample):(peakIdx+postSample)]
+                    spikedata = data[np.arange(4)+electrode*4, (peakIdx-preSample):(peakIdx+postSample)]
 
                     spikeEvent = SpikeEvent(electrode,peakIdx,spikedata)
-
+                    # if peakIdx<1000:
+                    #     print(peakIdx, sampleIndex)
                     spikes_list.append(spikeEvent)
 
                     sampleIndex += postSample
-#                         print(sampleIndex)
 
-                    # pbar.n = sampleIndex
-                    # pbar.refresh()
 
                     break #break the channel loop
                 else:

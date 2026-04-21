@@ -19,10 +19,10 @@ def acquire_data(queue:Queue, buffer:RingBufferG, shutdown_event:Event, pull_tim
 
             # Make the processing thread wait if if there are too many item queued up
             # otherwise the processing thread will make the DAQ thread very slow and lead to build up of items
-            if queue.qsize()> queue_max:
+            qsize = queue.qsize()
+            if qsize > queue_max:
                 need_pause.set()
-            
-            if queue.qsize() < queue_max/2:
+            if qsize < queue_max / 2:
                 need_pause.clear()
 
         except Empty:

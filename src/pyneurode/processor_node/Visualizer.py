@@ -4,12 +4,16 @@ It is used to visualize particular messages
 '''
 
 from abc import ABC
+import functools
+import logging
 import dearpygui.dearpygui as dpg
 from pyneurode.processor_node.Message import Message
 import numpy as np
 import shortuuid
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
-from typing import List, Union
+from typing import List, Tuple, Union, Optional
+from pyneurode.processor_node.Processor import logger
+
 
 class Visualizer:
     """The base Visualizer class. Intended to be extended by subclasses.
@@ -21,13 +25,25 @@ class Visualizer:
         this is an exmaple showing how it works
     
     """
-    def __init__(self, name:str):
+    def __init__(self, verbose=False, filters:list=None, title:Optional[str]=None):
         """
 
         Args:
             name (str): Name of the visualizer, for identification purpose
         """
-        self.name = name
+        self.name =  self.__class__.__name__ +'_'+ shortuuid.ShortUUID().random(5) #unique identying string for the processor
+        self.title = title
+        self.log = functools.partial(logger, self.name)
+        self.control_msgs = []
+        self.verbose = verbose
+        
+        if filters is None:
+            filters = []
+            
+        self.filters = filters
+
+    def set_filters(self,filters:list):
+        self.filters = filters
 
     def init_gui(self):
         """Build the GUI using dearpygui here
@@ -38,6 +54,28 @@ class Visualizer:
         """
         
         raise NotImplementedError('init_gui must be implemented')
+    
+    def _refresh(self, messages:List[Message]):
+        self.update(messages)
+        
+        # send control message out
+        msg = self.control_msgs
+        if len(msg) > 0 and self.verbose:
+            self.log(logging.INFO, msg )
+        self.control_msgs = []
+        
+        return msg
+    
+    def get_IOspecs(self) -> Tuple[List[Message], List[Message]]:
+        """return a tuple ([input message], [output message]) with the Message type that this processor is expected to
+        receive and produce respectively
+        """
+        
+        return (
+            [Message],
+            [Message]
+        )
+    
 
     def update(self, messages:List[Message]):
         """ Update the interface.
@@ -50,6 +88,9 @@ class Visualizer:
         """
         # function called to update the figures
         raise NotImplementedError('update must be implemented')
+    
+    def send_control_msg(self, msg:Message):
+        self.control_msgs.append(msg)
 
 
 def shiftSignal4plot(x,shift_scale=10):

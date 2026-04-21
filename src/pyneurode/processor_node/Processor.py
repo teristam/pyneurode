@@ -1,23 +1,65 @@
-from __future__ import annotations # for postponed evaluation
+from __future__ import annotations  # for postponed evaluation
+
 import functools
 import logging
+import threading
 
 from pyneurode.processor_node.Message import Message
+
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
+import cProfile
 import os
 import pickle
 import tempfile
 import time
 from dataclasses import dataclass
+from functools import wraps
 from multiprocessing import *
 from queue import Empty
-from typing import *
-from functools import wraps
-import cProfile
-import numpy as np
-import shortuuid
-import pyneurode.utils as utils
 
+
+class CountedQueue:
+    """multiprocessing.Queue wrapper with a cross-process-safe qsize() counter.
+
+    macOS does not implement sem_getvalue(), so the standard Queue.qsize() raises
+    NotImplementedError there. This class maintains a multiprocessing.Value counter
+    that is incremented on put() and decremented on get(), making qsize() reliable
+    on all platforms.
+    """
+
+    def __init__(self):
+        self._queue = Queue()
+        self._count = Value('i', 0)
+
+    def put(self, item, block=True, timeout=None):
+        self._queue.put(item, block=block, timeout=timeout)
+        with self._count.get_lock():
+            self._count.value += 1
+
+    def get(self, block=True, timeout=None):
+        item = self._queue.get(block=block, timeout=timeout)
+        with self._count.get_lock():
+            self._count.value = max(0, self._count.value - 1)
+        return item
+
+    def qsize(self):
+        return self._count.value
+
+    def empty(self):
+        return self._count.value == 0
+
+    def close(self):
+        self._queue.close()
+
+    def join_thread(self):
+        self._queue.join_thread()
+
+
+
+import numpy as np
+import pyneurode.utils as utils
+import shortuuid
+from pyneurode.processor_node.Context import Context
 
 # import zmq
 
@@ -40,10 +82,11 @@ class Channel:
     A class that manage the connection between two Processors
     It will only allows  message types that match with the filter to pass through
     '''
-    def __init__(self, queue:Queue, filters:list=None):
+    def __init__(self, queue:Queue, filters:Union[List[str],List[Message]]=None, source:str=''):
         self.queue = queue
         self.filters = filters
         self.filters = filters
+        self.source = source #name of the sending process
 
     def send(self, message:Message):
         '''
@@ -51,11 +94,14 @@ class Channel:
         '''
 
         if self.filters is not None:
-            if message.type in self.filters:
+            dtype = message.type if hasattr(message,'type') else message.dtype # for compatibility with old message format
+            if dtype in self.filters:
                 # the timeout is necessary to avoid the other process shutting down first
                 # and block the current process
+                message.source = self.source #mark the sending process
                 self.queue.put(message)
         else:
+            message.source = self.source #mark the sending process
             self.queue.put(message)
 
     def recv(self, timeout = 0.1):
@@ -67,7 +113,7 @@ class Channel:
         except TimeoutError:
             return None
 
-class Processor:
+class Processor(Context):
     """The base class that handle real-time processing
 
     """
@@ -75,16 +121,24 @@ class Processor:
     # base class for all processor
     # when start, create its own process, open the port for sending and receiving data
     # should hide the underlying protocol used, so it is possible to use zmq and multiprocessing.Queue
-
+    
     def __init__(self):
         self.out_queues: Dict[str, Channel] = {}
         self.proc_name = self.__class__.__name__ +'_'+ shortuuid.ShortUUID().random(5) #unique identying string for the processor
         self.log = functools.partial(logger, self.proc_name)
         self.shutdown_event = None
-        self.in_queue = Queue()
+        self.in_queue = CountedQueue()
         self.log(logging.DEBUG, 'Initializing')
         self.latency = None #processing latency
         self.run_count = 0
+        
+        # regsiter itself to the current context
+        try:
+            context = type(self).get_context() # have to class it from class
+            self.log(logging.DEBUG, f'Context found. I am registering myself to {context}')
+            self.get_context().register_processors(self)
+        except TypeError:
+            self.log(logging.DEBUG, 'No context found. Have to register manually.')
 
     def init_context(self, ctx):
         self.shutdown_event = ctx.shutdown_event
@@ -100,7 +154,6 @@ class Processor:
         self.log(logging.DEBUG, 'Shut down')
         self.in_queue.close()
         self.in_queue.join_thread() #flush the all message to the pipe immediately so that it can be shut down properly
-        
 
     def run(self):
         assert self.shutdown_event is not None, 'The processor context has not been initiated'
@@ -116,7 +169,12 @@ class Processor:
         
     def connect(self, to_processor:Processor, filters=None):
         self.log(logging.DEBUG, f'Connecting {self.proc_name} and {to_processor.proc_name}')
-        self.out_queues[self.proc_name+'-'+to_processor.proc_name] = Channel(to_processor.in_queue, filters)
+        self.out_queues[to_processor.proc_name] = Channel(to_processor.in_queue, filters, self.proc_name)
+        
+    def disconnect(self, to_processor:Processor):
+        self.out_queues.pop(to_processor.proc_name, None)
+        self.log(logging.DEBUG, f'{to_processor.proc_name} removed from connection')
+            
 
     def send(self, data:Union[Message, List[Message]], output_name:str=None):
         # output the data to downstream queue specified by the output_name (if specified)
@@ -133,6 +191,7 @@ class Processor:
             for d in data:
                 if output_name is not None:
                     self.out_queues[output_name].send(d)
+                    # self.log(logging.DEBUG, f'{d} send to {output_name}')
                 else:
                     for q in self.out_queues.keys():
                         self.out_queues[q].send(d)
@@ -156,7 +215,7 @@ class Processor:
             try:
                 data = self.in_queue.get(block=True, timeout=self.QUEUE_PULL_TIMEOUT)
                 if self.in_queue.qsize() > 1000:
-                    self.log(logging.WARNING,'in-queue size is larger than 1000. Error may occur')
+                    self.log(logging.WARNING, 'in-queue size is larger than 1000. Error may occur')
                 processed_data = self._process(data)
                 if isinstance(processed_data,list):
                     for d in processed_data:
@@ -165,7 +224,16 @@ class Processor:
                     self.send(processed_data)
             except Empty: #if timeout
                 continue
-
+    
+    def get_IOspecs(self) -> Tuple[List[Message], List[Message]]:
+        """return a tuple ([input message], [output message]) with the Message type that this processor is expected to
+        receive and produce respectively
+        """
+        
+        return (
+            [Message],
+            [Message]
+        )
 
     def _process(self, message=None):
         # also monitor the processing time
@@ -199,6 +267,7 @@ class Processor:
         """
         # override this function in sub-class to implement specific functions
         raise NotImplementedError(f'{self.__class__.__name__}.process is not implemented')
+
 
 
 class Sink(Processor):
@@ -244,7 +313,7 @@ class TimeSource(Source):
     '''
     TimeSource: a Source that trigger an event in a given interval
     '''
-    def __init__(self, interval):
+    def __init__(self, interval:float):
         super().__init__()
         self.interval = interval
         self.end_time = None
@@ -274,35 +343,17 @@ class TimeSource(Source):
     def process(self):
         raise NotImplementedError(f'{self.__class__.__name__}.process is not implemented')
 
-class SineTimeSource(TimeSource):
-    '''
-    A TimeSource that generate multi-channel sine wave for debugging purpose
-    '''
-    def __init__(self, interval,frequency, channel_num, sampling_frequency=100):
-        super().__init__(interval)
-        self.frequency = frequency #in Hz
-        self.start_time = time.time()
-        self.channel_num = int(channel_num)
-        self.last_time = None #last time the data are plotted
-        self.dt = 1/sampling_frequency
-
-    def process(self):
-        # Generate a sine waveform
-        now = time.time() - self.start_time
-
-        if self.last_time is None:
-            t = np.arange(0, now, step=self.dt)
-        else:
-            # t = np.linspace(self.last_time, now, int((now-self.last_time)*self.Fs))
-            t = np.arange(self.last_time, now, step=self.dt)
-
-        if len(t)> 0:
-            # print(t)
-            self.last_time = t[-1]+self.dt
-            y = np.sin(2*np.pi*self.frequency*t)
-            y = np.tile(y, (self.channel_num,1)).T
-            # print(y.shape)
-            return Message('sine', y)
+class Message1(Message):
+    dtype = 'message1'
+    def __init__(self, data: Any, timestamp: Optional[float] = None):
+        super().__init__(Message1.dtype, data, timestamp)
+        
+class Message2(Message):
+    dtype = 'message2'
+    def __init__(self, data: Any, timestamp: Optional[float] = None):
+        super().__init__(Message1.dtype, data, timestamp)
+ 
+                                
 
 class DummyTimeSource(TimeSource):
     def startup(self):
@@ -336,20 +387,32 @@ class MsgTimeSource(TimeSource):
 class AddProcessor(Processor):
     def process(self, msg):
         return Message('dummy',msg.data + 100)
-    
-class ScaleProcessor(Processor):
-    def __init__(self, a, b):
-        super().__init__()
-        self.a = a
-        self.b = b
-        
-    def process(self, message: Message) -> Message:
-        x = message.data*self.a+self.b
-        return Message(message.type, x)
 
-class EchoProcessor(Sink):
+
+class EchoSink(Sink):
+    """ Simply print the message it receives
+    Also provide some measurement about the speed of message arriving
+    """
+    def __init__(self, print_metrics=False, print_data=True, report_period=1):
+        super().__init__()
+        self.print_metrics = print_metrics
+        self.print_data= print_data
+        self.msg_count = 0
+        self.report_freqency = report_period
+        self.last_report_time = time.time()
+        
     def process(self,data):
-        self.log(logging.INFO, f'Printing {data}')
+        if self.print_data:
+            self.log(logging.INFO, f'Printing {data}')
+            
+        self.msg_count +=1
+        
+        if self.print_metrics and (time.time()- self.last_report_time)>self.report_freqency:
+            # calculate the message rate
+            self.log(logging.DEBUG, f'Message rate: {self.msg_count/(time.time()-self.last_report_time):.2f}')
+            self.msg_count = 0
+            self.last_report_time = time.time()
+        
         
         
 class DummpyNumpyTimeSource(TimeSource):
@@ -385,6 +448,13 @@ class FileEchoSource(TimeSource):
         self.last_msg = None
         self.batch_size = batch_size
 
+    @staticmethod
+    def _wrap_adc(msg: Message) -> Message:
+        from pyneurode.processor_node.Message import NumpyMessage
+        if msg.dtype == 'adc_data':
+            return NumpyMessage(msg.data, msg.timestamp)
+        return msg
+
     def startup(self):
         super().startup()
         self.datafile = open(self.filename, 'rb')
@@ -399,9 +469,9 @@ class FileEchoSource(TimeSource):
                     msg = pickle.load(self.datafile)
                     if type(msg) is list:
                         if len(msg)>0:
-                            self.data = self.data + msg
+                            self.data = self.data + [self._wrap_adc(m) for m in msg]
                     elif type(msg) is Message:
-                        self.data.append(msg)
+                        self.data.append(self._wrap_adc(msg))
                     else:
                         raise TypeError(f'Datatype {type(msg)} is not supported')
                 except EOFError:
@@ -426,7 +496,7 @@ class FileEchoSource(TimeSource):
             
             # modify the acquire_time so that we can measure the latency
             for m in msg:
-                if m.type == 'spike':
+                if m.dtype == 'spike':
                     m.data.acq_timestamp = utils.perf_counter()
 
             if self.verbose:
@@ -501,9 +571,15 @@ def profile_cProfile(output_file=None):
             print(f'profiler output file {_output_file}')
             profiler = cProfile.Profile()
             profiler.enable()
-            func(*args, **kwargs)
-            profiler.disable()
-            profiler.dump_stats(_output_file)
+            try:
+                func(*args, **kwargs)
+            except:
+                pass
+            finally:
+                profiler.disable()
+                profiler.dump_stats(_output_file)
+                print(f'Written profiler data to {_output_file}')
+
         
         return wrapper
 

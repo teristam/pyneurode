@@ -1,34 +1,58 @@
 from dataclasses import dataclass
 from typing import *
+from typing import Any, Optional
 import numpy as np
-from py import process
 
-@dataclass
 class Message:
     '''
-    Simple dataclass that transfer data between Processors
+    Simple class that transfer data between Processors
     '''
-    type: str
-    data: Any
-    timestamp: float = None
+    
+    def __init__(self, dtype:str, data:Any, timestamp:Optional[float]=None, source:Optional[str]=''):
+        self.dtype = dtype
+        self.data = data
+        self.timestamp = timestamp
+        self.source = source
 
     def __repr__(self) -> str:
 
         if isinstance(self.data, np.ndarray):
-            return f'Message (type: {self.type}, data shape: {self.data.shape}, timestamp: {self.timestamp})'
+            return f'Message (dtype: {self.dtype}, data shape: {self.data.shape}, timestamp: {self.timestamp})'
         else:
-            return f'Message (type: {self.type}, data: {self.data}, timestamp: {self.timestamp})'
+            return f'Message (dtype: {self.dtype}, data: {self.data}, timestamp: {self.timestamp})'
         
 
 class MetricsMessage(Message):
     '''
     Message that contains metrics information
     '''
-    type = 'metrics'
+    dtype = 'metrics'
     
     def __init__(self, processor:str, measures:dict):
-        self.data = {
+        data = {
             'processor': processor,
             'measures':measures
         }
+        super().__init__(self.dtype, data)
     
+
+class NumpyMessage(Message):
+    dtype = 'numpy'
+    def __init__(self, data:np.ndarray, timestamp: Optional[float] = None):
+        super().__init__(self.dtype, data, timestamp)
+
+
+class SpikeTrainMessage(Message):
+    """Message that contains the binned spike train
+    spiketrain is in the format (time x neuron)
+    """
+    dtype = 'spike_train'
+
+    def __init__(self, spk_train:np.ndarray):
+        
+        if isinstance(spk_train, np.ndarray):
+            self.data = spk_train
+        else:
+            raise TypeError("The input should be a numpy array")
+        
+        self.timestamp = time.time()

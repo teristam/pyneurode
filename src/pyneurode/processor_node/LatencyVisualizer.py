@@ -12,9 +12,8 @@ import random
 
 
 class LatencyVisualizer(Visualizer):
-    def __init__(self, name: str, subplot_size=(3, 3)) -> None:
-        super().__init__(name)
-        self.name = name  # unique identying string for the visualizer
+    def __init__(self, subplot_size=(3, 3), title=None) -> None:
+        super().__init__(filters=['metrics'], title=title)
         self.data_count = 0
         self.plot_data_tag = self.name + "_plot_data"
         self.buffer = None
@@ -29,7 +28,7 @@ class LatencyVisualizer(Visualizer):
         self.buffer_length = 100
 
     def init_gui(self):
-        with dpg.window(label=self.name, width=300, height=200, tag=self.name):
+        with dpg.window(label=(self.title if self.title else self.name), width=300, height=200, tag=self.name):
             with dpg.subplots(
                 self.subplot_size[0], self.subplot_size[1], width=-1, height=-1
             ) as self.subplots:

@@ -174,7 +174,9 @@ class RingBufferG(RingBuffer):
         return output
         # return RingBufferG.jointParadigmArray(output)
 
-
+    def __len__(self):
+        # return the number of ims 
+        return min(self.length, self.absWriteHead)
 
 
 if __name__ == '__main__':
