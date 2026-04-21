@@ -1,5 +1,7 @@
 import io
 import pickle
+from pyneurode.processor_node.Message import Message
+from pathlib import Path
 
 '''
 Adapted from https://stackoverflow.com/questions/2121874/python-pickling-after-changing-a-modules-directory
@@ -25,10 +27,21 @@ def renamed_loads(pickled_bytes):
     return renamed_load(file_obj)
 
 
-with open('data/ch256_dump.pkl','rb') as f, open('data/ch256_dump2.pkl','wb') as f2:
+def migrate_message(obj):
+    """Convert old Message objects that used 'type' attribute to the new 'dtype' attribute."""
+    items = obj if isinstance(obj, list) else [obj]
+    for m in items:
+        if isinstance(m, Message) and 'dtype' not in m.__dict__ and 'type' in m.__dict__:
+            m.dtype = m.__dict__.pop('type')
+    return obj
+
+
+file2convert = Path('data/M7_2022-07-16_17-17-33_test1/M7_test1_20220716_171720_305e71_packets.pkl')
+with open(file2convert,'rb') as f, open(file2convert.parent/'packets_new.pkl','wb') as f2:
     while True:
         try:
             data = renamed_load(f)
+            migrate_message(data)
             pickle.dump(data, f2)
         except EOFError:
             print('Save finished')

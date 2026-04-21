@@ -326,7 +326,7 @@ class NodeManager():
                 
                 # Create the graph and generate the best layout
                 if len(edges)>0:
-                    g = ig.Graph(edges, directed=True)
+                    g = ig.Graph(n=len(self.nodes_idx), edges=edges, directed=True)
                     layout = g.layout(layout='grid')
                     #shift the pos of nodes so that they always start at 0,0
                     layout = np.array(list(layout))
