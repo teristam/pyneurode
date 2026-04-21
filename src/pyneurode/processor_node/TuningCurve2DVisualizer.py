@@ -24,8 +24,8 @@ class TuningCurve2DVisualizer(Visualizer):
     Display a 2D analog signal
     It accepts data 
     '''
-    def __init__(self, buffer_length:int = 500, filters=None, scale = 6, xbin:int = 10, ybin:int=10, xmax=10, ymax=10, time_scale=None) -> None:
-        super().__init__(filters=filters)
+    def __init__(self, buffer_length:int = 500, filters=None, scale = 6, xbin:int = 10, ybin:int=10, xmax=10, ymax=10, time_scale=None, title=None) -> None:
+        super().__init__(filters=filters, title=title)
         self.plot_data = (np.arange(buffer_length), np.zeros((buffer_length,)))
         self.data_count = 0
         self.plot_data_tag = self.name+'_plot_data'
@@ -54,7 +54,7 @@ class TuningCurve2DVisualizer(Visualizer):
     def init_gui(self):
         window_width = 800
         
-        with dpg.window(label=self.name, width=window_width, height=500, tag=self.name):
+        with dpg.window(label=(self.title if self.title else self.name), width=window_width, height=500, tag=self.name):
             
             with dpg.theme(tag="plot_theme"):
                 with dpg.theme_component(dpg.mvScatterSeries):

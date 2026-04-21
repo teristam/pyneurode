@@ -20,8 +20,8 @@ class AnalogTriggerControl(Visualizer):
     Send a message when an analog signal exceed a certain threshold
     '''
     def __init__(self, name:str, message2send:Message, hysteresis=0.01, 
-                 buffer_length:int = 500, scale = 1, time_scale=None, smoothing_alpha=0.1) -> None:
-        super().__init__(name)
+                 buffer_length:int = 500, scale = 1, time_scale=None, smoothing_alpha=0.1, title=None) -> None:
+        super().__init__(name, title=title)
         self.plot_data = (np.arange(buffer_length), np.zeros((buffer_length,)))
         self.name = name #unique identying string for the visualizer
         self.data_count = 0
@@ -49,7 +49,7 @@ class AnalogTriggerControl(Visualizer):
         
     def init_gui(self):
         window_width = 800
-        with dpg.window(label=self.name, width=window_width, height=500, tag=self.name, autosize=True):
+        with dpg.window(label=(self.title if self.title else self.name), width=window_width, height=500, tag=self.name, autosize=True):
             with dpg.group(horizontal=True):
                 self.plot_panel = dpg.add_child_window(width=-window_width*2/4) #negative means no. of pixel from the right of its container
                 self.control_panel = dpg.add_child_window(width=window_width*2/4)

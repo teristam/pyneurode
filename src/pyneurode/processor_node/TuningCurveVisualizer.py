@@ -61,8 +61,8 @@ class TuningCurveVisualizer(AnalogVisualizer):
     A visualizer that calculate and display the 1D tuning curve of cells in realtime
     """
     def __init__(self, x_variable_idx=0, filters=None, nbin=10, bin_size: float = 1,
-                 buffer_length:int = 500, scale = 1, time_scale=None, smoothing_alpha=0.1) -> None:
-        super().__init__(filters=filters)
+                 buffer_length:int = 500, scale = 1, time_scale=None, smoothing_alpha=0.1, title=None) -> None:
+        super().__init__(filters=filters, title=title)
         self.plot_data = (np.arange(buffer_length), np.zeros((buffer_length,)))
         self.data_count = 0
         self.plot_data_tag = self.name+'_plot_data'
@@ -85,7 +85,7 @@ class TuningCurveVisualizer(AnalogVisualizer):
         
     def init_gui(self):
         window_width = 800
-        with dpg.window(label=self.name, width=window_width, height=500, tag=self.name, autosize=True):
+        with dpg.window(label=(self.title if self.title else self.name), width=window_width, height=500, tag=self.name, autosize=True):
             with dpg.group(horizontal=True):
                 self.plot_panel = dpg.add_child_window(width=-window_width*1/4) #negative means no. of pixel from the right of its container
                 self.control_panel = dpg.add_child_window(width=window_width*1/4)

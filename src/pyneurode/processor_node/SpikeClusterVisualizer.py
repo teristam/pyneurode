@@ -29,8 +29,8 @@ def getClusterColor(i:int,alpha=200):
 class SpikeClusterVisualizer(Visualizer):
 
 
-    def __init__(self,num_channel=4, max_spikes = 500, max_plot_per_cluster=80) -> None:
-        super().__init__(filters=[SortedSpikeMessage])
+    def __init__(self, num_channel=4, max_spikes=500, max_plot_per_cluster=80, title=None) -> None:
+        super().__init__(filters=[SortedSpikeMessage], title=title)
         self.num_channel = num_channel
         self.channel_plot = []
         self.channel_plot_axes = []
@@ -44,7 +44,7 @@ class SpikeClusterVisualizer(Visualizer):
 
     def init_gui(self):
         
-        with dpg.window(label='Waveform window', autosize=True):
+        with dpg.window(label=(self.title if self.title else self.name), autosize=True):
             window_width = 800
             window_height = window_width//2
 

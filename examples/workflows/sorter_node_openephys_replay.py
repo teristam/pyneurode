@@ -54,7 +54,7 @@ if __name__ == '__main__':
         templateTrainProcessor.connect(templateMatchProcessor)
         templateMatchProcessor.connect(syncDataProcessor)
         templateMatchProcessor.connect(spike2arduino)
-        zmqSource.connect(syncDataProcessor, 'adc_data')
+        zmqSource.connect(syncDataProcessor, 'numpy')
 
         analog_visualizer = AnalogVisualizer(scale=20, buffer_length=6000)
         pos_visualizer = AnalogVisualizer(buffer_length=6000)

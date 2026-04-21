@@ -120,12 +120,12 @@ class SyncDataProcessor(BatchProcessor):
                 if data2read > 0:
                     msg_data = self.spike_buffer.readContinous(data2read)
                     self.readHead += data2read
-                    return Message('synced_data', msg_data)
-  
+                    return NumpyMessage(msg_data)
+
             elif self.adc_buffer is not None:
                 # Find the minimum of the write head, and then send them
                 curReadHead = min(self.spike_buffer.absWriteHead, self.adc_buffer.absWriteHead)
-                data2read = curReadHead - self.readHead 
+                data2read = curReadHead - self.readHead
 
                 if data2read >0:
 
@@ -136,7 +136,7 @@ class SyncDataProcessor(BatchProcessor):
 
                     self.readHead += data2read
 
-                    return Message('synced_data', msg_data)
+                    return NumpyMessage(msg_data)
 
 
 if __name__ == '__main__':
