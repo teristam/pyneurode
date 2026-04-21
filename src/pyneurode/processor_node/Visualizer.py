@@ -11,7 +11,7 @@ from pyneurode.processor_node.Message import Message
 import numpy as np
 import shortuuid
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional
 from pyneurode.processor_node.Processor import logger
 
 
@@ -25,13 +25,14 @@ class Visualizer:
         this is an exmaple showing how it works
     
     """
-    def __init__(self, verbose=False, filters:list=None):
+    def __init__(self, verbose=False, filters:list=None, title:Optional[str]=None):
         """
 
         Args:
             name (str): Name of the visualizer, for identification purpose
         """
         self.name =  self.__class__.__name__ +'_'+ shortuuid.ShortUUID().random(5) #unique identying string for the processor
+        self.title = title
         self.log = functools.partial(logger, self.name)
         self.control_msgs = []
         self.verbose = verbose

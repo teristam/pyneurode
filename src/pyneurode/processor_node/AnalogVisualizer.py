@@ -18,8 +18,8 @@ class AnalogVisualizer(Visualizer):
     '''
     Display a analog value
     '''
-    def __init__(self, buffer_length:int = 500, scale = 1, time_scale=None, filters=None) -> None:
-        super().__init__(filters=[NumpyMessage])
+    def __init__(self, buffer_length:int = 500, scale = 1, time_scale=None, filters=None, title=None) -> None:
+        super().__init__(filters=[NumpyMessage], title=title)
         self.plot_data = (np.arange(buffer_length), np.zeros((buffer_length,)))
         self.data_count = 0
         self.plot_data_tag = self.name+'_plot_data'
@@ -35,7 +35,7 @@ class AnalogVisualizer(Visualizer):
 
     def init_gui(self):
         window_width = 800
-        with dpg.window(label=self.name, width=window_width, height=500, tag=self.name):
+        with dpg.window(label=(self.title if self.title else self.name), width=window_width, height=500, tag=self.name):
             with dpg.group(horizontal=True):
                 with dpg.child_window(width = -200):
                     with dpg.plot(label='Plot', height=-1, width=-1) as plot_id:
