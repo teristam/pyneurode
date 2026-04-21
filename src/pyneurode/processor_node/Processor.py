@@ -55,7 +55,6 @@ class CountedQueue:
         self._queue.join_thread()
 
 
-from typing import *
 
 import numpy as np
 import pyneurode.utils as utils

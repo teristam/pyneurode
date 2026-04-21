@@ -13,6 +13,7 @@ from pyneurode.processor_node.Message import Message
 from pyneurode.processor_node.Processor import *
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
+from typing import Union, Tuple, Dict, List
 
 
 class AnalogSignalMerger(BatchProcessor):

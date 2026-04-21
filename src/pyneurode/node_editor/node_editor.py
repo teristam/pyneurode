@@ -9,7 +9,7 @@ import igraph as ig
 import inspect
 import logging
 import importlib
-
+from typing import Union, Tuple, Dict, List
 from pyneurode.processor_node.Visualizer import Visualizer
 
 class NodeManager():

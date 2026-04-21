@@ -6,7 +6,7 @@ import numpy as np
 from pyneurode.RingBuffer.RingBuffer import RingBuffer
 from pyneurode.processor_node.AnalogVisualizer import AnalogVisualizer, DummpyControlSink
 from pyneurode.processor_node.GUIProcessor import GUIProcessor
-from pyneurode.processor_node.Message import Message
+from pyneurode.processor_node.Message import Message, NumpyMessage
 from pyneurode.processor_node.Processor import MsgTimeSource
 from pyneurode.processor_node.SineTimeSource import SineTimeSource
 from pyneurode.processor_node.ProcessorContext import ProcessorContext
@@ -75,10 +75,11 @@ class TuningCurveVisualizer(AnalogVisualizer):
         self.data_idx = None
         self.series_name = []
         self.control_list = []
-        self.y_axes = []
-        self.x_axes = []
+        self.y_axes: dict[int, int | str] = {}
+        self.x_axes: dict[int, int | str] = {}
         self.selected_cells = []
         self.subplots = None
+        self._needs_subplot_rebuild = False
         self.tuning_curve_estimator = TuningCurveEstimator(nbin = nbin, bin_size=bin_size)
         self.x_variable_idx = x_variable_idx
         
@@ -94,71 +95,130 @@ class TuningCurveVisualizer(AnalogVisualizer):
     def update_cell_select_list(self):
         # update the checkboxes for selecting which cell to trigger
         no_cell = self.tuning_curve_estimator.get_num_cell()
-        self.selected_cells = [0 for _ in range(no_cell)]
+        old_selected = self.selected_cells
+        self.selected_cells = [
+            old_selected[i] if i < len(old_selected) else False
+            for i in range(no_cell)
+        ]
         self.series_name = [f'{i}_{self.name}' for i in range(len(self.selected_cells))]
-        self.y_axes = [None for i in range(len(self.selected_cells))]
-        self.x_axes = [None for i in range(len(self.selected_cells))]
-        
+        self.y_axes = {}
+        self.x_axes = {}
+
         # clear all the existing cells
         for gp in self.control_list:
-            dpg.delete_item(gp) 
-            
-        self.control_list = []
-        self.threshold_sliders = []
-        self.trigger_direction = []
-        
-        def selected_cell_changed(sender, is_selected, cell_no):
-            self.selected_cells[cell_no] = is_selected           
-            self.update_subplots() # also update the supblot associated with the selected cell
+            dpg.delete_item(gp)
 
-        
-        def slider_changed(sender, value, cell_no):
-            #update the horizontal line of the threshold
-            dpg.set_value(self.threshold_timeseries[cell_no], ([value],))
-            
+        self.control_list = []
+
+        def selected_cell_changed(sender, is_selected, cell_no):
+            try:
+                if cell_no >= len(self.selected_cells):
+                    logging.error(
+                        f'Checkbox callback cell_no={cell_no} is out of range '
+                        f'(selected_cells has {len(self.selected_cells)} entries). '
+                        f'This usually means the cell list was rebuilt while a stale checkbox still exists.'
+                    )
+                    return
+                self.selected_cells[cell_no] = is_selected
+                self._needs_subplot_rebuild = True
+            except Exception as e:
+                logging.error(
+                    f'selected_cell_changed crashed: cell_no={cell_no}, '
+                    f'is_selected={is_selected}, '
+                    f'len(selected_cells)={len(self.selected_cells)}, '
+                    f'series_name={self.series_name}, '
+                    f'error={e}',
+                    exc_info=True
+                )
+
         for i in range(no_cell):
             with dpg.group(horizontal=True,parent=self.control_panel) as gp:
                 dpg.add_checkbox(label = f'Channel {i}', callback=selected_cell_changed, user_data=i)
                 self.control_list.append(gp)
+
+        # clear stale subplots now that cell count has changed
+        self._needs_subplot_rebuild = True
                 
                 
     def update_subplots(self):
-        
-        if self.subplots is not None:
-            dpg.delete_item(self.subplots)
+        try:
+            if self.subplots is not None:
+                dpg.delete_item(self.subplots)
+                self.subplots = None
+            self.y_axes = {}
+            self.x_axes = {}
 
-    
-        # Re-create the subplots and line series    
-        
-        self.log(logging.DEBUG, self.series_name)
-        
-        #Create subplot for each of the selected cells
-        ncol = 3
-        nrow = np.ceil(sum(self.selected_cells)/ncol)
-        with dpg.subplots(nrow, ncol, parent=self.plot_panel, width=-1,height=-1) as subplots:
-            self.subplots = subplots
-            for i,is_selected in enumerate(self.selected_cells):
-                if is_selected: # if the cell is selected
-                    
-                    with dpg.plot():
-                        dpg.add_plot_legend()
-                        xaxis = dpg.add_plot_axis(dpg.mvXAxis, label="")
-                        yaxis = dpg.add_plot_axis(dpg.mvYAxis, label="")
-                        self.y_axes[i] = yaxis
-                        self.x_axes[i] = xaxis
-                        
-                        dpg.add_line_series([],[], label=self.series_name[i], parent=yaxis, tag=self.series_name[i])
-                        
-                        dpg.fit_axis_data(self.y_axes[i])   
-                        dpg.fit_axis_data(self.x_axes[i])   
-                    
-                    
-        self.need_fit_axis = True #refit the axis to the data
+            self.log(logging.DEBUG, self.series_name)
+
+            ncol = 3
+            n_selected = sum(self.selected_cells)
+            if n_selected == 0:
+                self.subplots = None
+                return
+            ncol = min(ncol, n_selected)
+            nrow = int(np.ceil(n_selected / ncol))
+
+            if len(self.series_name) != len(self.selected_cells):
+                logging.error(
+                    f'update_subplots: series_name length ({len(self.series_name)}) '
+                    f'does not match selected_cells length ({len(self.selected_cells)}). '
+                    f'State is inconsistent — skipping subplot rebuild.'
+                )
+                return
+
+            plots_created = 0
+            with dpg.subplots(nrow, ncol, parent=self.plot_panel, width=-1, height=-1) as subplots:
+                self.subplots = subplots
+                for i, is_selected in enumerate(self.selected_cells):
+                    if is_selected:
+                        tag = self.series_name[i]
+                        if dpg.does_item_exist(tag):
+                            logging.warning(
+                                f'update_subplots: tag "{tag}" already exists in DPG before creation. '
+                                f'Deleting stale item to avoid duplicate-tag crash.'
+                            )
+                            dpg.delete_item(tag)
+                        with dpg.plot():
+                            dpg.add_plot_legend()
+                            xaxis = dpg.add_plot_axis(dpg.mvXAxis, label="")
+                            yaxis = dpg.add_plot_axis(dpg.mvYAxis, label="")
+                            self.y_axes[i] = yaxis
+                            self.x_axes[i] = xaxis
+                            dpg.add_line_series([], [], label=tag, parent=yaxis, tag=tag)
+                            dpg.fit_axis_data(self.y_axes[i])
+                            dpg.fit_axis_data(self.x_axes[i])
+                        plots_created += 1
+
+            self.need_fit_axis = True
+        except Exception as e:
+            logging.error(
+                f'update_subplots crashed: '
+                f'n_selected={sum(self.selected_cells)}, '
+                f'selected_cells={self.selected_cells}, '
+                f'series_name={self.series_name}, '
+                f'subplots_tag={self.subplots}, '
+                f'error={e}',
+                exc_info=True
+            )
 
     def update(self, messages: List[Message]):
-        
+
+        if self._needs_subplot_rebuild:
+            self._needs_subplot_rebuild = False
+            self.update_subplots()
+
+        messages = [m for m in messages if isinstance(m.data, np.ndarray)]
         for m in messages:
-            self.tuning_curve_estimator.update(m.data[:, self.x_variable_idx ], m.data[:,:-1])
+            if m.data.ndim != 2:
+                continue
+            n_cols = m.data.shape[1]
+            if n_cols < 2:
+                continue
+
+            #plot y against x, where x is the variable for tuning curve (e.g. position) and y is the neural activity
+            x_col = self.x_variable_idx % n_cols  # normalise negative index
+            y_cols = [j for j in range(n_cols) if j != x_col]
+            self.tuning_curve_estimator.update(m.data[:, x_col], m.data[:, y_cols])
             
         
         if not len(self.control_list) == self.tuning_curve_estimator.get_num_cell():
@@ -168,37 +228,43 @@ class TuningCurveVisualizer(AnalogVisualizer):
         # update the plot
         
         x, y = self.tuning_curve_estimator.get_tuning_curve()
-        for i, is_selected in enumerate(self.selected_cells):
-            if is_selected:
-                dpg.set_value(self.series_name[i],(x, y[i,:])) #must be called in main thread
+        # if y is None:
+        #     return
+        # for i, is_selected in enumerate(self.selected_cells):
+        #     if is_selected:
+        #         if i >= y.shape[0]:
+        #             continue
+        #         tag = self.series_name[i]
+        #         if not dpg.does_item_exist(tag):
+        #             continue
+        #         dpg.set_value(tag, (x, y[i, :]))  # must be called in main thread
         
         
     
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     
-    # x = np.random.normal(5,scale=5,size=(200,1))
     x = np.random.randint(0,20,(200,1))
     y = np.zeros((len(x),3),dtype=float)
     for i in range(len(x)):
         y[i,:] = np.random.normal(x[i]%10, size=3)
         
     data = np.hstack([y,x])
-    print(data.shape)
+    print(data.shape) # [200,4]
     
     msg = []
-    for _ in range(200):
+    for _ in range(2000):
         idx = np.random.choice(np.arange(len(data)), size=100)
-        msg += [Message('data', data[idx,:])]
+        msg += [NumpyMessage(data[idx,:])]
 
-    with ProcessorContext() as ctx:
-        source = MsgTimeSource(0.1, msg)
-        visualizer = TuningCurveVisualizer('Synchronized signals', x_variable_idx = -1, nbin=20, buffer_length=6000)
+    with ProcessorContext(auto_start=False) as ctx:
+        source = MsgTimeSource(1, msg)
+        visualizer = TuningCurveVisualizer(x_variable_idx=-1, nbin=20,
+                                           buffer_length=6000, title='Synchronized signals')
         control = DummpyControlSink()
-        
+
         gui = GUIProcessor(internal_buffer_size=5000)
-        
-        source.connect(gui)
-        gui.register_visualizer(visualizer,filters=['data'], control_targets=[control])
-        
+
+        gui.register_visualizer(source, [visualizer], control_targets=[control])
+
         ctx.start()

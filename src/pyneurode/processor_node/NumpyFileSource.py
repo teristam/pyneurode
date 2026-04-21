@@ -13,6 +13,9 @@ import logging
 import numpy as np 
 from pyneurode.processor_node.Message import Message
 from pyneurode.spike_sorter import simpleDownSample
+from typing import Union, Tuple, Dict, List, Optional
+
+
 ADC_CHANNEL = 20
 
 class NumpyMessage(Message):

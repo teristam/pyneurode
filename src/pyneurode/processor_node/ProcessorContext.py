@@ -71,7 +71,7 @@ class ProcessorContext(Context):
         super().__exit__(exc_type, exc_value, exc_tb)
         if self.auto_start:
             self.start()
-        self.stop()
+        # self.stop()
         for p in self.subprocs:
             try:
                 p.join(timeout=5)
