@@ -191,9 +191,12 @@ class SpikeClusterVisualizer(Visualizer):
         # since it is only for visualization
         
         if len(messages) == 0:
-            return 
+            return
         df = pd.concat([m.data for m in  messages])
-        
+
+        if df.empty:
+            return
+
         # clear current wavefroms if it is using a new template
         if self.template_update_id is None:
             self.template_update_id = df.iloc[-1].template_update_id

@@ -73,9 +73,13 @@ class ProcessorContext(Context):
             self.start()
         self.stop()
         for p in self.subprocs:
-            p.join(timeout=5)
+            try:
+                p.join(timeout=5)
+            except KeyboardInterrupt:
+                pass
             if p.is_alive():
                 p.terminate()
+                p.join(timeout=2)
 
 
 
