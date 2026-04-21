@@ -350,6 +350,11 @@ class NodeManager():
         dpg.create_viewport(title='Custom Title', width=800, height=600)
         dpg.setup_dearpygui()
         dpg.show_viewport()
-        dpg.start_dearpygui()
-        dpg.destroy_context()
+        try:
+            while dpg.is_dearpygui_running():
+                dpg.render_dearpygui_frame()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            dpg.destroy_context()
         

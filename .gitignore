@@ -141,3 +141,4 @@ doc/_build/
 data/
 
 spike_sorter_cy.c
+dpg_layout.ini

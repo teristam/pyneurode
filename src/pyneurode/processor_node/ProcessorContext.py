@@ -33,7 +33,7 @@ class ProcessorContext(Context):
         self.processors:dict = {} #dictionary of the processors managed by the context
         self.links = []
         self.subprocs = []
-        self.auto_start = True
+        self.auto_start = auto_start
 
     def register_processors(self, *args:Processor):
         # register and initialize the processor
@@ -71,6 +71,11 @@ class ProcessorContext(Context):
         super().__exit__(exc_type, exc_value, exc_tb)
         if self.auto_start:
             self.start()
+        self.stop()
+        for p in self.subprocs:
+            p.join(timeout=5)
+            if p.is_alive():
+                p.terminate()
 
 
 
